@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rugby Scorer</title>
+<style>
+:root{--bg:#fafafa;--card:#fff;--ink:#111;--mute:#666;--line:#e6e6e6;--us:#ff2e97;--usink:#111;--them:#111;--themink:#fff;--ghost:#f0f0f0;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e0e0e;--card:#1b1b1b;--ink:#f5f5f5;--mute:#a3a3a3;--line:#333;--us:#ff3fa0;--them:#f5f5f5;--themink:#111;--ghost:#2a2a2a}}
+:root[data-theme="dark"]{--bg:#0e0e0e;--card:#1b1b1b;--ink:#f5f5f5;--mute:#a3a3a3;--line:#333;--us:#ff3fa0;--them:#f5f5f5;--themink:#111;--ghost:#2a2a2a}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;border-top:6px solid var(--us);background:var(--bg);color:var(--ink);font:16px/1.4 "Trebuchet MS",system-ui,sans-serif;min-height:100vh}
+main{max-width:520px;margin:0 auto;padding:14px}
+h1,h2,h3{margin:0;font-family:Georgia,"Times New Roman",serif}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:12px;color:var(--ink);background:var(--ghost)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--us);outline-offset:2px}
+button:disabled{opacity:.35;cursor:default}
+input{font:inherit;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+label{display:block;font-size:14px;color:var(--mute);margin-bottom:4px}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.primary{background:var(--us);color:var(--usink);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.chip{background:var(--ghost);border-radius:20px;padding:6px 6px 6px 12px;display:flex;align-items:center;gap:4px}
+.chip button{padding:2px 8px;background:none;font-size:18px;line-height:1}
+.board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;text-align:center;gap:6px;padding:14px 8px}
+.board .nm{font-size:14px;color:var(--mute);overflow-wrap:anywhere}
+.board .sc{font:700 64px/1 Georgia,serif;font-variant-numeric:tabular-nums}
+.board .dash{font-size:28px;color:var(--mute)}
+.us .sc{color:var(--us)}.them .sc{color:var(--them)}
+.half{text-align:center;color:var(--mute);font-size:14px;margin:-4px 0 10px}
+.btns{display:grid;gap:8px}
+.btns .try{padding:20px;font-size:20px;font-weight:700}
+.us-b button{background:var(--us);color:var(--usink)}.them-b button{background:var(--them);color:var(--themink)}
+.btns .pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btns small{display:block;font-weight:400;opacity:.85}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.tools .wide{grid-column:1/-1}
+.log{list-style:none;margin:8px 0 0;padding:0}
+.log li{padding:7px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;font-size:15px}
+.log li:first-child{border-top:0}.pts{font-weight:700;white-space:nowrap}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:5}
+.sheet>div{background:var(--card);width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));max-height:80%;overflow:auto}
+.sheet .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.sheet .grid button{background:var(--us);color:var(--usink);padding:16px 8px;font-weight:700}
+.chip.on{background:var(--us);color:var(--usink)}.chip .nm{font-size:16px;padding:2px 4px;color:inherit}.chip button{color:inherit}
+.hrow{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;margin-bottom:8px}
+.seg button{padding:10px 6px;line-height:1.3}.seg button.sel{background:var(--us);color:var(--usink);font-weight:700}.seg small{font-size:12px;font-weight:400;opacity:.85}
+.empty{color:var(--mute);font-size:15px}
+textarea{font:13px/1.3 ui-monospace,Menlo,monospace;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%}
+.big{text-align:center;padding:18px 8px}
+.big .sc{font:700 54px/1 Georgia,serif}
+</style></head>
+<body><main id="app"></main>
+<script>
+const KEY='rugbyScorer.v1';
+const blank=()=>({us:'',them:'',players:[],events:[],redo:[],started:false,finished:false,roster:[],history:[],gid:null,mode:'score'});
+let S=blank(),pick=false,pop=false,screen='',viewId=null;
+try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(blank(),JSON.parse(r))}catch(e){}
+if(!S.roster.length&&S.players.length)S.roster=[...S.players];
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const $=s=>document.querySelector(s);
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const usN=()=>S.us.trim()||'Us',thN=()=>S.them.trim()||'Them';
+const half=()=>S.events.some(e=>e.type==='half')?2:1;
+const score=t=>S.events.filter(e=>e.team===t).reduce((a,e)=>a+e.pts,0);
+const PL={try:'Who scored the try?',conv:'Who kicked the conversion?',pen:'Who kicked the penalty?'};
+const LBL={try:'Try',conv:'Conversion',pen:'Penalty'},PTS={try:5,conv:2,pen:3};
+const add=(team,type,player)=>{S.events.push({team,type,pts:S.mode==='tries'&&type==='try'?1:PTS[type]||0,player:player||'',half:half()});S.redo=[];save();render()};
+const undo=()=>{if(S.events.length){S.redo.push(S.events.pop());S.finished=false;save();render()}};
+const redo=()=>{if(S.redo.length){S.events.push(S.redo.pop());save();render()}};
+const evText=e=>e.type==='half'?'Half time':(e.team==='us'?usN():thN())+' '+LBL[e.type].toLowerCase()+(e.player?' – '+e.player:'');
+const evLi=e=>`<li><span>${esc(evText(e))}</span><span class="pts">${e.type==='half'?'':'+'+e.pts}</span></li>`;
+
+function setup(){
+  $('#app').innerHTML=`<h1>New match</h1><p class="empty">Add the squad now. You'll choose a scorer each time your team scores a try.</p>
+  <div class="card"><div class="row"><div><label for="us">Your team</label><input id="us" value="${esc(S.us)}" placeholder="Our team"></div>
+  <div><label for="th">Opponents</label><input id="th" value="${esc(S.them)}" placeholder="Opponents"></div></div></div>
+  <div class="card"><label>Match type</label><div class="row seg"><button data-m="score" aria-pressed="${S.mode!=='tries'}" class="${S.mode!=='tries'?'sel':''}">Score<br><small>tries, conversions, penalties</small></button><button data-m="tries" aria-pressed="${S.mode==='tries'}" class="${S.mode==='tries'?'sel':''}">Try count<br><small>1 point per try</small></button></div></div>
+  <div class="card"><label for="pn">Player name</label><div class="row"><input id="pn" placeholder="e.g. Sophia" autocomplete="off"><button id="addp" style="flex:0 0 80px">Add</button></div>
+  <div class="empty" style="margin-top:10px">Tap names to choose who's playing today (${S.players.length} of ${S.roster.length})</div>
+  <div class="chips">${S.roster.map((p,i)=>`<span class="chip ${S.players.includes(p)?'on':''}"><button class="nm" data-t="${i}" aria-pressed="${S.players.includes(p)}">${esc(p)}</button><button data-rm="${i}" aria-label="Remove ${esc(p)}">×</button></span>`).join('')||'<span class="empty">No players yet</span>'}</div></div>
+  <button class="primary" id="go" style="width:100%;padding:16px;font-size:18px">Kick off</button>
+  <button id="hs" style="width:100%;margin-top:10px">Past results (${S.history.length})</button>
+  <button id="bk2" style="width:100%;margin-top:10px">Backup & restore</button>`;
+  const names=()=>{S.us=$('#us').value;S.them=$('#th').value;save()};
+  $('#us').oninput=names;$('#th').oninput=names;
+  const addP=()=>{const v=$('#pn').value.trim();names();if(v&&!S.roster.includes(v)){S.roster.push(v);S.players.push(v);save()}setup();$('#pn').focus()};
+  $('#addp').onclick=addP;$('#pn').onkeydown=e=>{if(e.key==='Enter')addP()};
+  document.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{names();const n=S.roster[+b.dataset.rm];S.roster=S.roster.filter(x=>x!==n);S.players=S.players.filter(x=>x!==n);save();setup()});
+  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{names();const n=S.roster[+b.dataset.t];S.players=S.players.includes(n)?S.players.filter(x=>x!==n):[...S.players,n];save();setup()});
+  $('#hs').onclick=()=>{names();screen='hist';render()};
+  $('#bk2').onclick=()=>{names();screen='backup';render()};
+  document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{names();S.mode=b.dataset.m;save();setup()});
+  $('#go').onclick=()=>{names();S.started=true;save();render()};
+}
+
+function match(){
+  const h=half(),T=S.mode==='tries';
+  $('#app').innerHTML=`<div class="card board"><div class="us"><div class="nm">${esc(usN())}</div><div class="sc">${score('us')}</div></div><div class="dash">–</div><div class="them"><div class="nm">${esc(thN())}</div><div class="sc">${score('them')}</div></div></div>
+  <div class="half">${h===1?'First half':'Second half'}</div>
+  <div class="card btns us-b"><h3 style="color:var(--us)">${esc(usN())}</h3>
+    <button class="try" id="utry">Try <small>+${T?1:5}</small></button>
+    ${T?'':`<div class="pair"><button data-a="us:conv">Conversion <small>+2</small></button><button data-a="us:pen">Penalty <small>+3</small></button></div>`}</div>
+  <div class="card btns them-b"><h3 style="color:var(--them)">${esc(thN())}</h3>
+    <button class="try" data-a="them:try">Try <small>+${T?1:5}</small></button>
+    ${T?'':`<div class="pair"><button data-a="them:conv">Conversion <small>+2</small></button><button data-a="them:pen">Penalty <small>+3</small></button></div>`}</div>
+  <div class="tools"><button id="un" ${S.events.length?'':'disabled'}>Undo</button><button id="re" ${S.redo.length?'':'disabled'}>Redo</button>
+    <button id="ht" ${h===1?'':'disabled'}>Half time</button><button id="ft" class="primary">Full time</button></div>
+  <div class="card" style="margin-top:12px"><h3>Match log</h3><ul class="log">${S.events.length?[...S.events].reverse().map(evLi).join(''):'<li class="empty">Nothing yet</li>'}</ul></div>
+  ${pop?popup():''}
+  ${pick?`<div class="sheet" id="sh"><div><h3>${PL[pick]}</h3><div class="grid">${S.players.map((p,i)=>`<button data-p="${i}">${esc(p)}</button>`).join('')}
+  <button data-p="-1" style="background:var(--ghost);color:var(--ink)">Not listed</button></div><button id="cx" style="width:100%">Cancel</button></div></div>`:''}`;
+  $('#utry').onclick=()=>{pick='try';match()};
+  document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const[t,k]=b.dataset.a.split(':');if(t==='us'){pick=k;match()}else add(t,k)});
+  document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{const i=+b.dataset.p,k=pick;pick=false;add('us',k,i<0?'Unknown':S.players[i])});
+  if(pick){$('#cx').onclick=()=>{pick=false;match()};$('#sh').onclick=e=>{if(e.target.id==='sh'){pick=false;match()}}}
+  $('#un').onclick=undo;$('#re').onclick=redo;
+  $('#ht').onclick=()=>{S.events.push({team:'',type:'half',pts:0,player:'',half:1});S.redo=[];save();render()};
+  $('#ft').onclick=()=>{archive();save();pop=true;match()};
+  if(pop){$('#pc').onclick=()=>{pop=false;match()};$('#pf').onclick=()=>{pop=false;S.finished=true;save();render()};$('#pp').onclick=e=>{if(e.target.id==='pp'){pop=false;match()}}}
+}
+
+function tally(){const t={};S.events.filter(e=>e.team==='us'&&e.player).forEach(e=>{const o=t[e.player]||(t[e.player]={try:0,conv:0,pen:0,pts:0});o[e.type]++;o.pts+=e.pts});
+  const w=(n,a,b)=>n?n+' '+(n>1?b:a):'';
+  return Object.entries(t).sort((x,y)=>y[1].pts-x[1].pts).map(([p,o])=>`<li><span>${esc(p)}${S.mode==='tries'?'':'<br>'}<small class="empty"${S.mode==='tries'?' hidden':''}>${[w(o.try,'try','tries'),w(o.conv,'conversion','conversions'),w(o.pen,'penalty','penalties')].filter(Boolean).join(', ')}</small></span><span class="pts">${S.mode==='tries'?w(o.try,'try','tries'):o.pts+' pts'}</span></li>`).join('')||'<li class="empty">No scorers yet</li>'}
+function popup(){
+  const a=score('us'),b=score('them'),res=a>b?'Win':a<b?'Defeat':'Draw',t={};
+  S.events.filter(e=>e.team==='us'&&e.type==='try').forEach(e=>t[e.player]=(t[e.player]||0)+1);
+  const sc=Object.entries(t).sort((x,y)=>y[1]-x[1]);
+  return `<div class="sheet" id="pp" style="align-items:center;padding:14px"><div style="border-radius:18px"><div class="big" style="padding-top:4px"><div class="empty">Full time · ${res}</div><div class="sc">${a} – ${b}</div><div>${esc(usN())} v ${esc(thN())}</div></div>
+  <h3>Scorers</h3><ul class="log">${tally()}</ul>
+  <div class="row" style="margin-top:14px"><button id="pc">Keep playing</button><button id="pf" class="primary">Half-by-half</button></div></div></div>`}
+function sumHTML(){
+  const a=score('us'),b=score('them');
+  const res=a>b?'Win':a<b?'Defeat':'Draw';
+  const tries={};S.events.filter(e=>e.team==='us'&&e.type==='try').forEach(e=>tries[e.player]=(tries[e.player]||0)+1);
+  const sc=Object.entries(tries).sort((x,y)=>y[1]-x[1]);
+  const sec=n=>{const L=S.events.filter(e=>e.type!=='half'&&e.half===n);
+    const f=t=>L.filter(e=>e.team===t).reduce((s,e)=>s+e.pts,0);
+    return `<div class="card"><h3>${n===1?'First half':'Second half'} <span class="pts" style="float:right">${f('us')} – ${f('them')}</span></h3><ul class="log">${L.length?L.map(evLi).join(''):'<li class="empty">No scores</li>'}</ul></div>`};
+  return `<div class="card big"><div class="empty">Full time · ${res}</div><div class="sc">${a} – ${b}</div><div>${esc(usN())} v ${esc(thN())}</div></div>
+  <div class="card"><h3>Scorers</h3><ul class="log">${tally()}</ul></div>
+  ${sec(1)}${sec(2)}
+  `;}
+function summary(){
+  $('#app').innerHTML=sumHTML()+`<div class="row"><button id="bk">Back to match</button><button id="nw" class="primary">New match</button></div>`;
+  $('#bk').onclick=()=>{S.finished=false;save();render()};
+  $('#nw').onclick=()=>ask('Start a new match? Your squad and past results are kept.','New match',()=>{const k={roster:S.roster,history:S.history,us:S.us,them:S.them,mode:S.mode};S=Object.assign(blank(),k);S.players=[...S.roster];save();render()});
+}
+function ask(msg,ok,fn){const d=document.createElement('div');d.className='sheet';d.style.cssText='align-items:center;padding:14px';
+  d.innerHTML=`<div style="border-radius:18px"><h3>${esc(msg)}</h3><div class="row" style="margin-top:14px"><button id="aN">Cancel</button><button id="aY" class="primary">${esc(ok)}</button></div></div>`;
+  document.body.appendChild(d);d.querySelector('#aN').onclick=()=>d.remove();d.querySelector('#aY').onclick=()=>{d.remove();fn()}}
+function backup(){
+  const data=JSON.stringify({v:1,roster:S.roster,history:S.history});
+  $('#app').innerHTML=`<h1>Backup & restore</h1>
+  <div class="card"><h3>Back up</h3><p class="empty">Copy this code and keep it somewhere safe, such as Notes or a message to yourself.</p>
+  <textarea id="bo" readonly rows="4" aria-label="Backup code">${esc(data)}</textarea>
+  <div class="row" style="margin-top:8px"><button id="bc" class="primary">Copy</button><button id="bs">Share</button></div></div>
+  <div class="card"><h3>Restore</h3><p class="empty">Paste a backup code. Results are added to what is already here.</p>
+  <textarea id="bi" rows="4" placeholder="Paste backup code" aria-label="Paste backup code"></textarea>
+  <button id="br" class="primary" style="width:100%;margin-top:8px">Restore</button></div>
+  <p id="bm" class="empty" role="status"></p>
+  <button id="bb" style="width:100%">Back</button>`;
+  const msg=t=>{$('#bm').textContent=t};
+  $('#bb').onclick=()=>{screen='';render()};
+  $('#bc').onclick=async()=>{try{await navigator.clipboard.writeText(data);msg('Copied.')}catch(e){const o=$('#bo');o.select();o.setSelectionRange(0,999999);let ok=false;try{ok=document.execCommand('copy')}catch(x){}msg(ok?'Copied.':'Press and hold the code, then choose Copy.')}};
+  $('#bs').onclick=async()=>{try{await navigator.share({text:data})}catch(e){if(e.name!=='AbortError')msg('Sharing is not available here. Use Copy instead.')}};
+  $('#br').onclick=()=>{let d;
+    try{d=JSON.parse($('#bi').value.trim());if(!Array.isArray(d.history)||!Array.isArray(d.roster))throw 0}catch(e){return msg('That is not a valid backup code.')}
+    ask('Add '+d.history.length+' results and '+d.roster.length+' players from this backup?','Restore',()=>{
+      const ids=new Set(S.history.map(g=>g.id));
+      d.history.forEach(g=>{if(g&&g.id&&Array.isArray(g.events)&&!ids.has(g.id)){S.history.push(g);ids.add(g.id)}});
+      S.history.sort((a,b)=>new Date(b.date)-new Date(a.date));
+      d.roster.forEach(n=>{if(typeof n==='string'&&n&&!S.roster.includes(n)){S.roster.push(n);S.players.push(n)}});
+      save();backup();msg('Restored.')})};
+}
+const fmt=d=>new Date(d).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
+function archive(){if(!S.gid)S.gid=Date.now();
+  const g={id:S.gid,date:new Date().toISOString(),us:usN(),them:thN(),a:score('us'),b:score('them'),events:S.events.slice(),mode:S.mode};
+  const i=S.history.findIndex(x=>x.id===g.id);
+  if(i<0)S.history.unshift(g);else{g.date=S.history[i].date;S.history[i]=g}}
+function hist(){
+  const H=S.history,w=H.filter(g=>g.a>g.b).length,l=H.filter(g=>g.a<g.b).length;
+  $('#app').innerHTML=`<h1>Past results</h1><p class="empty">${H.length?`${w} won · ${H.length-w-l} drawn · ${l} lost`:'No finished matches yet. Tap Full time to save one.'}</p>
+  ${H.map(g=>`<button class="card hrow" data-h="${g.id}"><span><b>${esc(g.us)}</b> v ${esc(g.them)}<br><small class="empty">${fmt(g.date)}${g.mode==='tries'?' · try count':''}</small></span><span class="pts" style="font-size:20px">${g.a} – ${g.b}</span></button>`).join('')}
+  <button id="hb" style="width:100%">Back</button>`;
+  $('#hb').onclick=()=>{screen='';render()};
+  document.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{viewId=+b.dataset.h;render()});
+}
+function viewG(g){
+  const k=S;S=Object.assign({},k,{events:g.events,us:g.us,them:g.them,mode:g.mode||'score'});let h;
+  try{h=sumHTML()}finally{S=k}
+  $('#app').innerHTML=`<h2 style="margin-bottom:10px">${fmt(g.date)}</h2>`+h+`<div class="row"><button id="hb">Back</button><button id="hd">Delete</button></div>`;
+  $('#hb').onclick=()=>{viewId=null;render()};
+  $('#hd').onclick=()=>ask('Delete this result?','Delete',()=>{S.history=S.history.filter(x=>x.id!==g.id);save();viewId=null;render()});
+}
+function render(){window.scrollTo(0,0);const g=viewId&&S.history.find(x=>x.id===viewId);
+  if(g)return viewG(g);if(screen==='hist')return hist();if(screen==='backup')return backup();S.finished?summary():S.started?match():setup()}
+render();
+</script></body></html>
