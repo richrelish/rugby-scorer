@@ -46,6 +46,8 @@ label{display:block;font-size:14px;color:var(--mute);margin-bottom:4px}
 .hrow{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;margin-bottom:8px}
 .seg button{padding:10px 6px;line-height:1.3}.seg button.sel{background:var(--us);color:var(--usink);font-weight:700}.seg small{font-size:12px;font-weight:400;opacity:.85}
 .empty{color:var(--mute);font-size:15px}
+.sw{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.swb{width:40px;height:40px;border-radius:50%;padding:0;border:3px solid var(--card);box-shadow:0 0 0 1px var(--line)}.swb.sel{box-shadow:0 0 0 3px var(--ink)}
+.cust{display:flex;align-items:center;gap:6px;margin:0;font-size:14px}.cust input{width:44px;height:40px;padding:2px}
 textarea{font:13px/1.3 ui-monospace,Menlo,monospace;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%}
 .big{text-align:center;padding:18px 8px}
 .big .sc{font:700 54px/1 Georgia,serif}
@@ -53,12 +55,23 @@ textarea{font:13px/1.3 ui-monospace,Menlo,monospace;padding:12px;border-radius:1
 <body><main id="app"></main>
 <script>
 const KEY='rugbyScorer.v1';
-const blank=()=>({us:'',them:'',players:[],events:[],redo:[],started:false,finished:false,roster:[],history:[],gid:null,mode:'score'});
+const blank=()=>({us:'',them:'',players:[],events:[],redo:[],started:false,finished:false,roster:[],history:[],gid:null,mode:'score',date:null});
 let S=blank(),pick=false,pop=false,screen='',viewId=null;
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(blank(),JSON.parse(r))}catch(e){}
 if(!S.roster.length&&S.players.length)S.roster=[...S.players];
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 const $=s=>document.querySelector(s);
+const TK='rugbyScorer.theme',DT={us:'#ff2e97',them:'#111111',mode:'auto'};
+let TH={...DT};
+try{const r=localStorage.getItem(TK);if(r)TH=Object.assign({},DT,JSON.parse(r))}catch(e){}
+const lum=h=>{const c=[1,3,5].map(i=>{const v=parseInt(h.substr(i,2),16)/255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});return .2126*c[0]+.7152*c[1]+.0722*c[2]};
+const inkOn=h=>lum(h)>.179?'#111':'#fff';
+function applyTheme(){const r=document.documentElement,st=r.style;
+  if(TH.us!==DT.us){st.setProperty('--us',TH.us);st.setProperty('--usink',inkOn(TH.us))}else{st.removeProperty('--us');st.removeProperty('--usink')}
+  if(TH.them!==DT.them){st.setProperty('--them',TH.them);st.setProperty('--themink',inkOn(TH.them))}else{st.removeProperty('--them');st.removeProperty('--themink')}
+  if(TH.mode==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',TH.mode);
+  try{localStorage.setItem(TK,JSON.stringify(TH))}catch(e){}}
+applyTheme();
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const usN=()=>S.us.trim()||'Us',thN=()=>S.them.trim()||'Them';
 const half=()=>S.events.some(e=>e.type==='half')?2:1;
@@ -75,21 +88,23 @@ function setup(){
   $('#app').innerHTML=`<h1>New match</h1><p class="empty">Add the squad now. You'll choose a scorer each time your team scores a try.</p>
   <div class="card"><div class="row"><div><label for="us">Your team</label><input id="us" value="${esc(S.us)}" placeholder="Our team"></div>
   <div><label for="th">Opponents</label><input id="th" value="${esc(S.them)}" placeholder="Opponents"></div></div></div>
+  <div class="card"><label for="md">Match date</label><input type="date" id="md" value="${S.date||today()}"></div>
   <div class="card"><label>Match type</label><div class="row seg"><button data-m="score" aria-pressed="${S.mode!=='tries'}" class="${S.mode!=='tries'?'sel':''}">Score<br><small>tries, conversions, penalties</small></button><button data-m="tries" aria-pressed="${S.mode==='tries'}" class="${S.mode==='tries'?'sel':''}">Try count<br><small>1 point per try</small></button></div></div>
   <div class="card"><label for="pn">Player name</label><div class="row"><input id="pn" placeholder="e.g. Sophia" autocomplete="off"><button id="addp" style="flex:0 0 80px">Add</button></div>
   <div class="empty" style="margin-top:10px">Tap names to choose who's playing today (${S.players.length} of ${S.roster.length})</div>
   <div class="chips">${S.roster.map((p,i)=>`<span class="chip ${S.players.includes(p)?'on':''}"><button class="nm" data-t="${i}" aria-pressed="${S.players.includes(p)}">${esc(p)}</button><button data-rm="${i}" aria-label="Remove ${esc(p)}">×</button></span>`).join('')||'<span class="empty">No players yet</span>'}</div></div>
   <button class="primary" id="go" style="width:100%;padding:16px;font-size:18px">Kick off</button>
   <button id="hs" style="width:100%;margin-top:10px">Past results (${S.history.length})</button>
-  <button id="bk2" style="width:100%;margin-top:10px">Backup & restore</button>`;
+  <button id="bk2" style="width:100%;margin-top:10px">Settings</button>`;
   const names=()=>{S.us=$('#us').value;S.them=$('#th').value;save()};
   $('#us').oninput=names;$('#th').oninput=names;
+  $('#md').onchange=()=>{S.date=$('#md').value||null;save()};
   const addP=()=>{const v=$('#pn').value.trim();names();if(v&&!S.roster.includes(v)){S.roster.push(v);S.players.push(v);save()}setup();$('#pn').focus()};
   $('#addp').onclick=addP;$('#pn').onkeydown=e=>{if(e.key==='Enter')addP()};
   document.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{names();const n=S.roster[+b.dataset.rm];S.roster=S.roster.filter(x=>x!==n);S.players=S.players.filter(x=>x!==n);save();setup()});
   document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{names();const n=S.roster[+b.dataset.t];S.players=S.players.includes(n)?S.players.filter(x=>x!==n):[...S.players,n];save();setup()});
   $('#hs').onclick=()=>{names();screen='hist';render()};
-  $('#bk2').onclick=()=>{names();screen='backup';render()};
+  $('#bk2').onclick=()=>{names();screen='settings';render()};
   document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{names();S.mode=b.dataset.m;save();setup()});
   $('#go').onclick=()=>{names();S.started=true;save();render()};
 }
@@ -127,7 +142,7 @@ function popup(){
   const a=score('us'),b=score('them'),res=a>b?'Win':a<b?'Defeat':'Draw',t={};
   S.events.filter(e=>e.team==='us'&&e.type==='try').forEach(e=>t[e.player]=(t[e.player]||0)+1);
   const sc=Object.entries(t).sort((x,y)=>y[1]-x[1]);
-  return `<div class="sheet" id="pp" style="align-items:center;padding:14px"><div style="border-radius:18px"><div class="big" style="padding-top:4px"><div class="empty">Full time · ${res}</div><div class="sc">${a} – ${b}</div><div>${esc(usN())} v ${esc(thN())}</div></div>
+  return `<div class="sheet" id="pp" style="align-items:center;padding:14px"><div style="border-radius:18px"><div class="big" style="padding-top:4px"><div style="font-weight:700">${fmt(S.date||today())}</div><div class="empty">Full time · ${res}</div><div class="sc">${a} – ${b}</div><div>${esc(usN())} v ${esc(thN())}</div></div>
   <h3>Scorers</h3><ul class="log">${tally()}</ul>
   <div class="row" style="margin-top:14px"><button id="pc">Keep playing</button><button id="pf" class="primary">Half-by-half</button></div></div></div>`}
 function sumHTML(){
@@ -138,7 +153,7 @@ function sumHTML(){
   const sec=n=>{const L=S.events.filter(e=>e.type!=='half'&&e.half===n);
     const f=t=>L.filter(e=>e.team===t).reduce((s,e)=>s+e.pts,0);
     return `<div class="card"><h3>${n===1?'First half':'Second half'} <span class="pts" style="float:right">${f('us')} – ${f('them')}</span></h3><ul class="log">${L.length?L.map(evLi).join(''):'<li class="empty">No scores</li>'}</ul></div>`};
-  return `<div class="card big"><div class="empty">Full time · ${res}</div><div class="sc">${a} – ${b}</div><div>${esc(usN())} v ${esc(thN())}</div></div>
+  return `<div class="card big"><div style="font-weight:700">${fmt(S.date||today())}</div><div class="empty">Full time · ${res}</div><div class="sc">${a} – ${b}</div><div>${esc(usN())} v ${esc(thN())}</div></div>
   <div class="card"><h3>Scorers</h3><ul class="log">${tally()}</ul></div>
   ${sec(1)}${sec(2)}
   `;}
@@ -150,6 +165,27 @@ function summary(){
 function ask(msg,ok,fn){const d=document.createElement('div');d.className='sheet';d.style.cssText='align-items:center;padding:14px';
   d.innerHTML=`<div style="border-radius:18px"><h3>${esc(msg)}</h3><div class="row" style="margin-top:14px"><button id="aN">Cancel</button><button id="aY" class="primary">${esc(ok)}</button></div></div>`;
   document.body.appendChild(d);d.querySelector('#aN').onclick=()=>d.remove();d.querySelector('#aY').onclick=()=>{d.remove();fn()}}
+const US_P=[['Neon pink','#ff2e97'],['Green','#1f9d55'],['Blue','#1e6fff'],['Orange','#ff7a00'],['Purple','#8a3ffc'],['Red','#e53935']];
+const TH_P=[['Black','#111111'],['Navy','#14213d'],['Red','#d62828'],['Blue','#1e6fff'],['Green','#1f7a45'],['Grey','#6b7280']];
+function swatches(key,P){const cur=TH[key].toLowerCase();
+  return `<div class="sw">${P.map(([n,c])=>`<button class="swb${cur===c?' sel':''}" style="background:${c}" data-k="${key}" data-c="${c}" aria-label="${n}" aria-pressed="${cur===c}"></button>`).join('')}<label class="cust">Custom<input type="color" data-k="${key}" value="${TH[key]}"></label></div>`}
+function settings(){
+  $('#app').innerHTML=`<h1>Settings</h1>
+  <div class="card"><h3>Colours</h3>
+  <label style="margin-top:10px">Your team</label>${swatches('us',US_P)}
+  <label style="margin-top:12px">Opponents</label>${swatches('them',TH_P)}
+  <label style="margin-top:12px">Appearance</label>
+  <div class="row seg">${[['auto','Auto'],['light','Light'],['dark','Dark']].map(([m,n])=>`<button data-md="${m}" class="${TH.mode===m?'sel':''}" aria-pressed="${TH.mode===m}">${n}</button>`).join('')}</div>
+  <button id="rs" style="width:100%;margin-top:12px">Reset colours</button></div>
+  <div class="card"><h3>Your data</h3><p class="empty">Back up your squad and results, or restore them on another phone.</p><button id="bu" style="width:100%">Backup & restore</button></div>
+  <button id="sb" style="width:100%">Back</button>`;
+  document.querySelectorAll('.swb').forEach(b=>b.onclick=()=>{TH[b.dataset.k]=b.dataset.c;applyTheme();settings()});
+  document.querySelectorAll('input[type=color]').forEach(i=>i.onchange=()=>{TH[i.dataset.k]=i.value;applyTheme();settings()});
+  document.querySelectorAll('[data-md]').forEach(b=>b.onclick=()=>{TH.mode=b.dataset.md;applyTheme();settings()});
+  $('#rs').onclick=()=>{TH={...DT};applyTheme();settings()};
+  $('#bu').onclick=()=>{screen='backup';render()};
+  $('#sb').onclick=()=>{screen='';render()};
+}
 function backup(){
   const data=JSON.stringify({v:1,roster:S.roster,history:S.history});
   $('#app').innerHTML=`<h1>Backup & restore</h1>
@@ -162,7 +198,7 @@ function backup(){
   <p id="bm" class="empty" role="status"></p>
   <button id="bb" style="width:100%">Back</button>`;
   const msg=t=>{$('#bm').textContent=t};
-  $('#bb').onclick=()=>{screen='';render()};
+  $('#bb').onclick=()=>{screen='settings';render()};
   $('#bc').onclick=async()=>{try{await navigator.clipboard.writeText(data);msg('Copied.')}catch(e){const o=$('#bo');o.select();o.setSelectionRange(0,999999);let ok=false;try{ok=document.execCommand('copy')}catch(x){}msg(ok?'Copied.':'Press and hold the code, then choose Copy.')}};
   $('#bs').onclick=async()=>{try{await navigator.share({text:data})}catch(e){if(e.name!=='AbortError')msg('Sharing is not available here. Use Copy instead.')}};
   $('#br').onclick=()=>{let d;
@@ -174,11 +210,13 @@ function backup(){
       d.roster.forEach(n=>{if(typeof n==='string'&&n&&!S.roster.includes(n)){S.roster.push(n);S.players.push(n)}});
       save();backup();msg('Restored.')})};
 }
-const fmt=d=>new Date(d).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const fmt=d=>{const m=/^(\d{4})-(\d\d)-(\d\d)$/.exec(d);const dt=m?new Date(+m[1],+m[2]-1,+m[3]):new Date(d);return dt.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short',year:'numeric'})};
 function archive(){if(!S.gid)S.gid=Date.now();
-  const g={id:S.gid,date:new Date().toISOString(),us:usN(),them:thN(),a:score('us'),b:score('them'),events:S.events.slice(),mode:S.mode};
+  const g={id:S.gid,date:S.date||today(),us:usN(),them:thN(),a:score('us'),b:score('them'),events:S.events.slice(),mode:S.mode};
   const i=S.history.findIndex(x=>x.id===g.id);
-  if(i<0)S.history.unshift(g);else{g.date=S.history[i].date;S.history[i]=g}}
+  if(i<0)S.history.unshift(g);else S.history[i]=g;
+  S.history.sort((a,b)=>String(b.date).localeCompare(String(a.date)))}
 function hist(){
   const H=S.history,w=H.filter(g=>g.a>g.b).length,l=H.filter(g=>g.a<g.b).length;
   $('#app').innerHTML=`<h1>Past results</h1><p class="empty">${H.length?`${w} won · ${H.length-w-l} drawn · ${l} lost`:'No finished matches yet. Tap Full time to save one.'}</p>
@@ -188,13 +226,13 @@ function hist(){
   document.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{viewId=+b.dataset.h;render()});
 }
 function viewG(g){
-  const k=S;S=Object.assign({},k,{events:g.events,us:g.us,them:g.them,mode:g.mode||'score'});let h;
+  const k=S;S=Object.assign({},k,{events:g.events,us:g.us,them:g.them,mode:g.mode||'score',date:g.date});let h;
   try{h=sumHTML()}finally{S=k}
-  $('#app').innerHTML=`<h2 style="margin-bottom:10px">${fmt(g.date)}</h2>`+h+`<div class="row"><button id="hb">Back</button><button id="hd">Delete</button></div>`;
+  $('#app').innerHTML=h+`<div class="row"><button id="hb">Back</button><button id="hd">Delete</button></div>`;
   $('#hb').onclick=()=>{viewId=null;render()};
   $('#hd').onclick=()=>ask('Delete this result?','Delete',()=>{S.history=S.history.filter(x=>x.id!==g.id);save();viewId=null;render()});
 }
 function render(){window.scrollTo(0,0);const g=viewId&&S.history.find(x=>x.id===viewId);
-  if(g)return viewG(g);if(screen==='hist')return hist();if(screen==='backup')return backup();S.finished?summary():S.started?match():setup()}
+  if(g)return viewG(g);if(screen==='hist')return hist();if(screen==='backup')return backup();if(screen==='settings')return settings();S.finished?summary():S.started?match():setup()}
 render();
 </script></body></html>
