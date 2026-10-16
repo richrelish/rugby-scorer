@@ -2,6 +2,13 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rugby Scorer</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="data:image/png;base64,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">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Rugby Scorer">
+<meta name="theme-color" content="#ff2e97">
 <style>
 :root{--bg:#fafafa;--card:#fff;--ink:#111;--mute:#666;--line:#e6e6e6;--us:#ff2e97;--usink:#111;--them:#111;--themink:#fff;--ghost:#f0f0f0;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -49,6 +56,10 @@ label{display:block;font-size:14px;color:var(--mute);margin-bottom:4px}
 .sw{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.swb{width:40px;height:40px;border-radius:50%;padding:0;border:3px solid var(--card);box-shadow:0 0 0 1px var(--line)}.swb.sel{box-shadow:0 0 0 3px var(--ink)}
 .cust{display:flex;align-items:center;gap:6px;margin:0;font-size:14px}.cust input{width:44px;height:40px;padding:2px}
 textarea{font:13px/1.3 ui-monospace,Menlo,monospace;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%}
+select{font:inherit;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%;min-width:0}
+.erow{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--line)}.erow span{flex:1}.erow select{width:auto;max-width:42%;padding:8px}.erow button{padding:6px 12px}
+.home{text-align:center;padding-top:28px}.home h1{font-size:46px;line-height:1.05;margin:16px 0 6px}.home .tag{color:var(--mute);margin:0 0 28px}.home button{width:100%;padding:18px;font-size:19px;margin-bottom:10px}
+.prose p,.prose li{font-size:16px;line-height:1.5;margin:0}.prose ol{padding-left:20px;margin:8px 0 0}.prose li{margin-bottom:9px}
 .big{text-align:center;padding:18px 8px}
 .big .sc{font:700 54px/1 Georgia,serif}
 </style></head>
@@ -56,7 +67,7 @@ textarea{font:13px/1.3 ui-monospace,Menlo,monospace;padding:12px;border-radius:1
 <script>
 const KEY='rugbyScorer.v1';
 const blank=()=>({us:'',them:'',players:[],events:[],redo:[],started:false,finished:false,roster:[],history:[],gid:null,mode:'score',date:null});
-let S=blank(),pick=false,pop=false,screen='',viewId=null;
+let S=blank(),pick=false,pop=false,screen='home',viewId=null,ed=null;
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(blank(),JSON.parse(r))}catch(e){}
 if(!S.roster.length&&S.players.length)S.roster=[...S.players];
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
@@ -85,7 +96,7 @@ const evText=e=>e.type==='half'?'Half time':(e.team==='us'?usN():thN())+' '+LBL[
 const evLi=e=>`<li><span>${esc(evText(e))}</span><span class="pts">${e.type==='half'?'':'+'+e.pts}</span></li>`;
 
 function setup(){
-  $('#app').innerHTML=`<h1>New match</h1><p class="empty">Add the squad now. You'll choose a scorer each time your team scores a try.</p>
+  $('#app').innerHTML=`<button id="hm" style="padding:6px 12px;margin-bottom:8px">‹ Home</button><h1>New match</h1><p class="empty">Add the squad now. You'll choose a scorer each time your team scores a try.</p>
   <div class="card"><div class="row"><div><label for="us">Your team</label><input id="us" value="${esc(S.us)}" placeholder="Our team"></div>
   <div><label for="th">Opponents</label><input id="th" value="${esc(S.them)}" placeholder="Opponents"></div></div></div>
   <div class="card"><label for="md">Match date</label><input type="date" id="md" value="${S.date||today()}"></div>
@@ -99,6 +110,7 @@ function setup(){
   const names=()=>{S.us=$('#us').value;S.them=$('#th').value;save()};
   $('#us').oninput=names;$('#th').oninput=names;
   $('#md').onchange=()=>{S.date=$('#md').value||null;save()};
+  $('#hm').onclick=()=>{names();screen='home';render()};
   const addP=()=>{const v=$('#pn').value.trim();names();if(v&&!S.roster.includes(v)){S.roster.push(v);S.players.push(v);save()}setup();$('#pn').focus()};
   $('#addp').onclick=addP;$('#pn').onkeydown=e=>{if(e.key==='Enter')addP()};
   document.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{names();const n=S.roster[+b.dataset.rm];S.roster=S.roster.filter(x=>x!==n);S.players=S.players.filter(x=>x!==n);save();setup()});
@@ -221,18 +233,84 @@ function hist(){
   const H=S.history,w=H.filter(g=>g.a>g.b).length,l=H.filter(g=>g.a<g.b).length;
   $('#app').innerHTML=`<h1>Past results</h1><p class="empty">${H.length?`${w} won · ${H.length-w-l} drawn · ${l} lost`:'No finished matches yet. Tap Full time to save one.'}</p>
   ${H.map(g=>`<button class="card hrow" data-h="${g.id}"><span><b>${esc(g.us)}</b> v ${esc(g.them)}<br><small class="empty">${fmt(g.date)}${g.mode==='tries'?' · try count':''}</small></span><span class="pts" style="font-size:20px">${g.a} – ${g.b}</span></button>`).join('')}
+  <button id="hn" style="width:100%;margin-bottom:8px">Add a past match</button>
   <button id="hb" style="width:100%">Back</button>`;
   $('#hb').onclick=()=>{screen='';render()};
+  $('#hn').onclick=()=>{ed={id:Date.now(),date:today(),us:S.us.trim()||'Us',them:'',mode:S.mode,events:[],isNew:true};render()};
   document.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{viewId=+b.dataset.h;render()});
 }
 function viewG(g){
   const k=S;S=Object.assign({},k,{events:g.events,us:g.us,them:g.them,mode:g.mode||'score',date:g.date});let h;
   try{h=sumHTML()}finally{S=k}
-  $('#app').innerHTML=h+`<div class="row"><button id="hb">Back</button><button id="hd">Delete</button></div>`;
+  $('#app').innerHTML=h+`<div class="row"><button id="hb">Back</button><button id="he">Edit</button><button id="hd">Delete</button></div>`;
   $('#hb').onclick=()=>{viewId=null;render()};
+  $('#he').onclick=()=>{ed=JSON.parse(JSON.stringify(g));ed.mode=ed.mode||'score';render()};
   $('#hd').onclick=()=>ask('Delete this result?','Delete',()=>{S.history=S.history.filter(x=>x.id!==g.id);save();viewId=null;render()});
 }
+const LOGO=`<svg viewBox="0 0 100 100" width="120" height="120" role="img" aria-label="Rugby Scorer logo"><rect width="100" height="100" rx="22" fill="var(--us)"/><g transform="rotate(35 50 50)"><ellipse cx="50" cy="50" rx="33" ry="20" fill="#111"/><path d="M24 50H76" stroke="#fff" stroke-width="2.4"/><path d="M36 44V56M43 44V56M50 44V56M57 44V56M64 44V56" stroke="#fff" stroke-width="2"/></g></svg>`;
+function home(){
+  $('#app').innerHTML=`<div class="home">${LOGO}<h1>Rugby Scorer</h1><p class="tag">Live scores and scorers for match day</p>
+  <button class="primary" id="h1b">Start</button><button id="h2b">Info</button><button id="h3b">Instructions</button></div>`;
+  $('#h1b').onclick=()=>{screen='';render()};
+  $('#h2b').onclick=()=>{screen='info';render()};
+  $('#h3b').onclick=()=>{screen='help';render()};
+}
+function info(){
+  $('#app').innerHTML=`<h1>Info</h1><div class="card prose" style="margin-top:12px"><p>Rugby Scorer is a simple match-day tracker for your team. It keeps a running score for both sides, records who scored each try, conversion or penalty, and marks half time. At full time it gives you a summary with the final score, the scorers and what happened in each half. You can play with full scoring or just count tries, and every match is saved on your phone so you can look back, edit results and back them up. Once the app is open it keeps working without a signal, and you can change its colours in Settings.</p></div>
+  <button id="ib" style="width:100%">Back</button>`;
+  $('#ib').onclick=()=>{screen='home';render()};
+}
+function help(){
+  $('#app').innerHTML=`<h1>Instructions</h1><div class="card prose" style="margin-top:12px"><ol>
+  <li><b>Set up.</b> Tap Start. Enter the team names, check the date, and choose Score (tries, conversions and penalties) or Try count (1 point per try).</li>
+  <li><b>Add your squad.</b> Type each player's name and tap Add. Tap names to choose who is playing today. The squad is remembered for next time.</li>
+  <li><b>Kick off.</b> Tap Kick off to open the match screen. The running score for each team is at the top.</li>
+  <li><b>Your team scores.</b> Tap Try, Conversion or Penalty, then pick the player. Choose Not listed if they are not in the squad.</li>
+  <li><b>Opponents score.</b> Tap their Try, Conversion or Penalty. It is added straight away with no name.</li>
+  <li><b>Made a mistake?</b> Tap Undo to remove the last action and Redo to put it back.</li>
+  <li><b>Half time.</b> Tap Half time when the first half ends. Scores after that count as the second half.</li>
+  <li><b>Full time.</b> Tap Full time for the result and scorers. Tap Half-by-half for the detail, or Keep playing if you tapped it too early. The match is saved automatically.</li>
+  <li><b>Past results.</b> On the set-up screen, open Past results to view matches. You can edit scores and scorers, delete a match, or add one you missed.</li>
+  <li><b>Settings.</b> Choose your colours, or back up and restore your squad and results.</li>
+  </ol></div><button id="xb" style="width:100%">Back</button>`;
+  $('#xb').onclick=()=>{screen='home';render()};
+}
+function editG(){
+  const G=ed,T=G.mode==='tries';
+  const pl=[...new Set([...S.roster,...G.events.filter(e=>e.player&&e.player!=='Unknown').map(e=>e.player)])];
+  const opts=sel=>['Unknown',...pl].map(p=>`<option${p===sel?' selected':''}>${esc(p)}</option>`).join('');
+  const tot=t=>G.events.filter(e=>e.team===t).reduce((a,e)=>a+e.pts,0);
+  const rows=n=>{const r=G.events.map((e,i)=>({e,i})).filter(x=>x.e.type!=='half'&&x.e.half===n).map(({e,i})=>`<div class="erow"><span>${esc(e.team==='us'?G.us:G.them||'Them')} ${LBL[e.type].toLowerCase()} <b>+${e.pts}</b></span>${e.team==='us'?`<select data-es="${i}" aria-label="Scorer">${opts(e.player||'Unknown')}</select>`:''}<button data-ed="${i}" aria-label="Delete score">×</button></div>`).join('');return r||'<div class="empty">No scores</div>'};
+  $('#app').innerHTML=`<h1>${G.isNew?'Add a past match':'Edit result'}</h1>
+  <div class="card"><div class="row"><div><label for="eu">Your team</label><input id="eu" value="${esc(G.us)}"></div><div><label for="et">Opponents</label><input id="et" value="${esc(G.them)}"></div></div>
+  <label for="edt" style="margin-top:10px">Date</label><input type="date" id="edt" value="${esc(String(G.date).slice(0,10))}"></div>
+  <div class="card"><h3>Scores <span class="pts" style="float:right">${tot('us')} – ${tot('them')}</span></h3>
+  <label style="margin-top:10px">First half</label>${rows(1)}<label style="margin-top:12px">Second half</label>${rows(2)}</div>
+  <div class="card"><h3>Add a score</h3>
+  <div class="row" style="margin-top:8px"><select id="at" aria-label="Team"><option value="us">${esc(G.us||'Us')}</option><option value="them">${esc(G.them||'Them')}</option></select>
+  <select id="ak" aria-label="Type">${T?'<option value="try">Try</option>':'<option value="try">Try</option><option value="conv">Conversion</option><option value="pen">Penalty</option>'}</select>
+  <select id="ah" aria-label="Half"><option value="1">1st half</option><option value="2">2nd half</option></select></div>
+  <label for="ap" style="margin-top:8px">Scorer (your team)</label><select id="ap">${opts('Unknown')}</select>
+  <button id="aa" class="primary" style="width:100%;margin-top:8px">Add</button></div>
+  <div class="row"><button id="ec">Cancel</button><button id="es" class="primary">Save</button></div>`;
+  const sync=()=>{G.us=$('#eu').value;G.them=$('#et').value;G.date=$('#edt').value||G.date};
+  document.querySelectorAll('[data-es]').forEach(x=>x.onchange=()=>{G.events[+x.dataset.es].player=x.value});
+  document.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>{sync();G.events.splice(+b.dataset.ed,1);editG()});
+  $('#aa').onclick=()=>{sync();const team=$('#at').value,type=$('#ak').value,h=+$('#ah').value;
+    const ev={team,type,pts:T&&type==='try'?1:PTS[type],player:team==='us'?$('#ap').value:'',half:h};
+    const m=G.events.findIndex(e=>e.type==='half');
+    if(h===1&&m>=0)G.events.splice(m,0,ev);else G.events.push(ev);
+    editG()};
+  $('#ec').onclick=()=>{ed=null;render()};
+  $('#es').onclick=()=>{sync();G.us=G.us.trim()||'Us';G.them=G.them.trim()||'Them';
+    const g={id:G.id,date:G.date,us:G.us,them:G.them,a:tot('us'),b:tot('them'),events:G.events,mode:G.mode};
+    const i=S.history.findIndex(x=>x.id===g.id);
+    if(i<0)S.history.push(g);else S.history[i]=g;
+    S.history.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+    save();viewId=g.id;ed=null;render()};
+}
 function render(){window.scrollTo(0,0);const g=viewId&&S.history.find(x=>x.id===viewId);
-  if(g)return viewG(g);if(screen==='hist')return hist();if(screen==='backup')return backup();if(screen==='settings')return settings();S.finished?summary():S.started?match():setup()}
+  if(ed)return editG();if(screen==='home')return home();if(screen==='info')return info();if(screen==='help')return help();if(g)return viewG(g);if(screen==='hist')return hist();if(screen==='backup')return backup();if(screen==='settings')return settings();S.finished?summary():S.started?match():setup()}
 render();
+if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})});
 </script></body></html>
