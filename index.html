@@ -65,6 +65,7 @@ select{font:inherit;padding:12px;border-radius:12px;border:1px solid var(--line)
 .pill{background:var(--us);color:var(--usink);font-weight:700;font-size:13px;padding:6px 14px;border-radius:20px}
 .shh{display:flex;align-items:center;gap:12px;margin-bottom:10px}.sht{font-family:Georgia,serif;font-weight:700;font-size:20px}
 .share{padding:2px}.share .card{padding:10px 12px;margin-bottom:10px}.share .big{padding:8px}.share .big .sc{font-size:46px}.share .log li{padding:5px 0}
+.btns .cdrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.btns .cdrow button{padding:8px;font-size:14px;font-weight:700}.btns .cdrow .yc{background:#f5c400;color:#111}.btns .cdrow .rc{background:#d7263d;color:#fff}
 .big{text-align:center;padding:18px 8px}
 .big .sc{font:700 54px/1 Georgia,serif}
 </style></head>
@@ -96,14 +97,15 @@ const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const usN=()=>S.us.trim()||'Us',thN=()=>S.them.trim()||'Them';
 const half=()=>S.events.some(e=>e.type==='half')?2:1;
 const score=t=>S.events.filter(e=>e.team===t).reduce((a,e)=>a+e.pts,0);
-const PL={try:'Who scored the try?',conv:'Who kicked the conversion?',pen:'Who kicked the penalty?'};
-const LBL={try:'Try',conv:'Conversion',pen:'Penalty'},PTS={try:5,conv:2,pen:3};
+const CARD={yellow:1,red:1};
+const PL={try:'Who scored the try?',conv:'Who kicked the conversion?',pen:'Who kicked the penalty?',yellow:'Who received the yellow card?',red:'Who received the red card?'};
+const LBL={try:'Try',conv:'Conversion',pen:'Penalty',yellow:'Yellow card',red:'Red card'},PTS={try:5,conv:2,pen:3};
 const add=(team,type,player,pos)=>{S.events.push({team,type,pts:S.mode==='tries'&&type==='try'?1:PTS[type]||0,player:player||'',pos:pos||'',half:half()});S.redo=[];save();render()};
 const scoreUs=k=>{if(S.players.length){pick=k;match()}else if(PS.on&&S.mode==='score'&&PS.list.length){pend={type:k,player:''};match()}else add('us',k)};
 const undo=()=>{if(S.events.length){S.redo.push(S.events.pop());S.finished=false;save();render()}};
 const redo=()=>{if(S.redo.length){S.events.push(S.redo.pop());save();render()}};
 const evText=e=>e.type==='half'?'Half time':(e.team==='us'?usN():thN())+' '+LBL[e.type].toLowerCase()+(e.player?' – '+e.player+(e.pos?' ('+e.pos+')':''):(e.pos?' – '+e.pos:''));
-const evLi=e=>`<li><span>${esc(evText(e))}</span><span class="pts">${e.type==='half'?'':'+'+e.pts}</span></li>`;
+const evLi=e=>`<li><span>${esc(evText(e))}</span><span class="pts">${e.type==='half'||CARD[e.type]?'':'+'+e.pts}</span></li>`;
 
 function setup(){
   $('#app').innerHTML=`<button id="hm" style="padding:6px 12px;margin-bottom:8px">‹ Home</button><h1>New match</h1><p class="empty">Add the squad now. You'll choose a scorer each time your team scores a try.</p>
@@ -135,10 +137,12 @@ function match(){
   <div class="half">${h===1?'First half':'Second half'}</div>
   <div class="card btns us-b"><h3 style="color:var(--us)">${esc(usN())}</h3>
     <button class="try" id="utry">Try <small>+${T?1:5}</small></button>
-    ${T?'':`<div class="pair"><button data-a="us:conv">Conversion <small>+2</small></button><button data-a="us:pen">Penalty <small>+3</small></button></div>`}</div>
+    ${T?'':`<div class="pair"><button data-a="us:conv">Conversion <small>+2</small></button><button data-a="us:pen">Penalty <small>+3</small></button></div>`}
+    <div class="cdrow"><button class="yc" data-a="us:yellow">Yellow card</button><button class="rc" data-a="us:red">Red card</button></div></div>
   <div class="card btns them-b"><h3 style="color:var(--them)">${esc(thN())}</h3>
     <button class="try" data-a="them:try">Try <small>+${T?1:5}</small></button>
-    ${T?'':`<div class="pair"><button data-a="them:conv">Conversion <small>+2</small></button><button data-a="them:pen">Penalty <small>+3</small></button></div>`}</div>
+    ${T?'':`<div class="pair"><button data-a="them:conv">Conversion <small>+2</small></button><button data-a="them:pen">Penalty <small>+3</small></button></div>`}
+    <div class="cdrow"><button class="yc" data-a="them:yellow">Yellow card</button><button class="rc" data-a="them:red">Red card</button></div></div>
   <div class="tools"><button id="un" ${S.events.length?'':'disabled'}>Undo</button><button id="re" ${S.redo.length?'':'disabled'}>Redo</button>
     <button id="ht" ${h===1?'':'disabled'}>Half time</button><button id="ft" class="primary">Full time</button></div>
   <button id="mh" style="width:100%;margin-top:8px">Home</button>
@@ -161,7 +165,7 @@ function match(){
 }
 
 function posSheet(){return `<div class="sheet" id="ps"><div><h3>${pend.player?'Position for '+esc(pend.player):'Which position scored?'}</h3><div class="grid">${PS.list.map((p,i)=>`<button data-pos="${i}">${esc(p)}</button>`).join('')}<button data-pos="-1" style="background:var(--ghost);color:var(--ink)">Skip</button></div><button id="pcx" style="width:100%">Cancel</button></div></div>`}
-function tally(){const t={};S.events.filter(e=>e.team==='us'&&(e.player||e.pos)).forEach(e=>{const k=e.player||e.pos,o=t[k]||(t[k]={try:0,conv:0,pen:0,pts:0,pos:new Set()});o[e.type]++;o.pts+=e.pts;if(e.pos&&e.player)o.pos.add(e.pos)});
+function tally(){const t={};S.events.filter(e=>e.team==='us'&&(e.player||e.pos)&&!CARD[e.type]).forEach(e=>{const k=e.player||e.pos,o=t[k]||(t[k]={try:0,conv:0,pen:0,pts:0,pos:new Set()});o[e.type]++;o.pts+=e.pts;if(e.pos&&e.player)o.pos.add(e.pos)});
   const w=(n,a,b)=>n?n+' '+(n>1?b:a):'';
   return Object.entries(t).sort((x,y)=>y[1].pts-x[1].pts).map(([p,o])=>`<li><span>${esc(p)}${S.mode==='tries'?'':'<br>'}<small class="empty"${S.mode==='tries'?' hidden':''}>${[w(o.try,'try','tries'),w(o.conv,'conversion','conversions'),w(o.pen,'penalty','penalties')].filter(Boolean).join(', ')}${o.pos.size?' · '+[...o.pos].join(', '):''}</small></span><span class="pts">${S.mode==='tries'?w(o.try,'try','tries'):o.pts+' pts'}</span></li>`).join('')||'<li class="empty">No scorers yet</li>'}
 function popup(){
@@ -177,7 +181,7 @@ function sumHTML(c){
   const tries={};S.events.filter(e=>e.team==='us'&&e.type==='try').forEach(e=>tries[e.player]=(tries[e.player]||0)+1);
   const sc=Object.entries(tries).sort((x,y)=>y[1]-x[1]);
   const grp=L=>{const o=[];L.forEach(e=>{const k=[e.team,e.type,e.player,e.pos].join('|'),g=o.find(x=>x.k===k);if(g){g.n++;g.pts+=e.pts}else o.push({k,e,n:1,pts:e.pts})});return o};
-  const evRow=g=>{const e=g.e,u=e.team==='us';return `<div class="trow"><span class="dot${u?'':' dk'}"></span><div><div class="tt"><span>${LBL[e.type]}${g.n>1?' × '+g.n:''}</span><span>+${g.pts}</span></div><div class="tw">${esc(u?(e.player?e.player+(e.pos?' ('+e.pos+')':''):(e.pos||usN())):thN())}</div></div></div>`};
+  const evRow=g=>{const e=g.e,u=e.team==='us';return `<div class="trow"><span class="dot${u?'':' dk'}"${CARD[e.type]?` style="background:${e.type==='red'?'#d7263d':'#f5c400'}"`:''}></span><div><div class="tt"><span>${LBL[e.type]}${g.n>1?' × '+g.n:''}</span><span>${CARD[e.type]?'':'+'+g.pts}</span></div><div class="tw">${esc(u?(e.player?e.player+(e.pos?' ('+e.pos+')':''):(e.pos||usN())):thN())}</div></div></div>`};
   const sec=n=>{const L=S.events.filter(e=>e.type!=='half'&&e.half===n);
     const f=t=>L.filter(e=>e.team===t).reduce((s,e)=>s+e.pts,0);
     return `<div><div class="strip"><span>${n===1?'First half':'Second half'}</span><span>${f('us')} – ${f('them')}</span></div>${L.length?grp(L).map(evRow).join(''):'<div class="empty" style="padding:6px 0">No scores</div>'}</div>`};
@@ -301,6 +305,7 @@ function help(){
   <li><b>Your team scores.</b> Tap Try, Conversion or Penalty, then pick the player. Choose Not listed if they are not in the squad.</li>
   <li><b>Positions (optional).</b> In Settings, switch Positions on. In Score mode, after choosing the player you will also pick their position from a list, or tap Skip. If no players are selected for the match, you are asked for the position only, and it appears in place of a name. Positions show in the match log, the full-time pop-up and the summary. You can rename, remove or add positions in Settings.</li>
   <li><b>Opponents score.</b> Tap their Try, Conversion or Penalty. It is added straight away with no name.</li>
+  <li><b>Cards.</b> Tap the small Yellow card or Red card button under a team. For your team you choose the player (and position if Positions is on), the same as a score. Cards appear in the match log and on the summary, and do not change the score.</li>
   <li><b>Made a mistake?</b> Tap Undo to remove the last action and Redo to put it back. If you start a game by accident, tap Home on the match screen to clear the score and return to the menu.</li>
   <li><b>Half time.</b> Tap Half time when the first half ends. Scores after that count as the second half.</li>
   <li><b>Full time.</b> Tap Full time for the result and scorers. Tap Match Summary for the detail, or Keep playing if you tapped it too early. The match is saved automatically. On the summary, tap Share for a compact one-screen version to screenshot and send to the team chat.</li>
@@ -323,7 +328,7 @@ function editG(){
   const pl=[...new Set([...S.roster,...G.events.filter(e=>e.player&&e.player!=='Unknown').map(e=>e.player)])];
   const opts=sel=>['Unknown',...pl].map(p=>`<option${p===sel?' selected':''}>${esc(p)}</option>`).join('');
   const tot=t=>G.events.filter(e=>e.team===t).reduce((a,e)=>a+e.pts,0);
-  const rows=n=>{const r=G.events.map((e,i)=>({e,i})).filter(x=>x.e.type!=='half'&&x.e.half===n).map(({e,i})=>`<div class="erow"><span>${esc(e.team==='us'?G.us:G.them||'Them')} ${LBL[e.type].toLowerCase()} <b>+${e.pts}</b>${e.pos?' ('+esc(e.pos)+')':''}</span>${e.team==='us'?`<select data-es="${i}" aria-label="Scorer">${opts(e.player||'Unknown')}</select>`:''}<button data-ed="${i}" aria-label="Delete score">×</button></div>`).join('');return r||'<div class="empty">No scores</div>'};
+  const rows=n=>{const r=G.events.map((e,i)=>({e,i})).filter(x=>x.e.type!=='half'&&x.e.half===n).map(({e,i})=>`<div class="erow"><span>${esc(e.team==='us'?G.us:G.them||'Them')} ${LBL[e.type].toLowerCase()} ${CARD[e.type]?'':`<b>+${e.pts}</b>`}${e.pos?' ('+esc(e.pos)+')':''}</span>${e.team==='us'?`<select data-es="${i}" aria-label="Scorer">${opts(e.player||'Unknown')}</select>`:''}<button data-ed="${i}" aria-label="Delete score">×</button></div>`).join('');return r||'<div class="empty">No scores</div>'};
   $('#app').innerHTML=`<h1>${G.isNew?'Add a past match':'Edit result'}</h1>
   <div class="card"><div class="row"><div><label for="eu">Your team</label><input id="eu" value="${esc(G.us)}"></div><div><label for="et">Opponents</label><input id="et" value="${esc(G.them)}"></div></div>
   <label for="edt" style="margin-top:10px">Date</label><input type="date" id="edt" value="${esc(String(G.date).slice(0,10))}"></div>
@@ -331,7 +336,7 @@ function editG(){
   <label style="margin-top:10px">First half</label>${rows(1)}<label style="margin-top:12px">Second half</label>${rows(2)}</div>
   <div class="card"><h3>Add a score</h3>
   <div class="row" style="margin-top:8px"><select id="at" aria-label="Team"><option value="us">${esc(G.us||'Us')}</option><option value="them">${esc(G.them||'Them')}</option></select>
-  <select id="ak" aria-label="Type">${T?'<option value="try">Try</option>':'<option value="try">Try</option><option value="conv">Conversion</option><option value="pen">Penalty</option>'}</select>
+  <select id="ak" aria-label="Type">${(T?'<option value="try">Try</option>':'<option value="try">Try</option><option value="conv">Conversion</option><option value="pen">Penalty</option>')+'<option value="yellow">Yellow card</option><option value="red">Red card</option>'}</select>
   <select id="ah" aria-label="Half"><option value="1">1st half</option><option value="2">2nd half</option></select></div>
   <label for="ap" style="margin-top:8px">Scorer (your team)</label><select id="ap">${opts('Unknown')}</select>
   ${T?'':`<label for="apo" style="margin-top:8px">Position (optional)</label><select id="apo"><option value="">None</option>${PS.list.map(p=>`<option>${esc(p)}</option>`).join('')}</select>`}
@@ -341,7 +346,7 @@ function editG(){
   document.querySelectorAll('[data-es]').forEach(x=>x.onchange=()=>{G.events[+x.dataset.es].player=x.value});
   document.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>{sync();G.events.splice(+b.dataset.ed,1);editG()});
   $('#aa').onclick=()=>{sync();const team=$('#at').value,type=$('#ak').value,h=+$('#ah').value;
-    const ev={team,type,pts:T&&type==='try'?1:PTS[type],player:team==='us'?$('#ap').value:'',pos:team==='us'?(($('#apo')||{}).value||''):'',half:h};
+    const ev={team,type,pts:T&&type==='try'?1:(PTS[type]||0),player:team==='us'?$('#ap').value:'',pos:team==='us'?(($('#apo')||{}).value||''):'',half:h};
     const m=G.events.findIndex(e=>e.type==='half');
     if(h===1&&m>=0)G.events.splice(m,0,ev);else G.events.push(ev);
     editG()};
