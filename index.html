@@ -62,6 +62,9 @@ select{font:inherit;padding:12px;border-radius:12px;border:1px solid var(--line)
 .prose p,.prose li{font-size:16px;line-height:1.5;margin:0}.prose ol{padding-left:20px;margin:8px 0 0}.prose li{margin-bottom:9px}
 .tl{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-top:8px}.strip{display:flex;justify-content:space-between;background:var(--ghost);border-radius:8px;padding:5px 9px;font-weight:700;font-size:13px;margin-bottom:2px}
 .trow{display:flex;gap:7px;padding:6px 0;border-top:1px solid var(--line)}.dot{width:9px;height:9px;border-radius:50%;background:var(--us);margin-top:5px;flex:none}.dot.dk{background:var(--them)}.trow>div{flex:1;min-width:0}.tt{display:flex;justify-content:space-between;font-weight:700;font-size:14px}.tw{font-size:11px;color:var(--mute);overflow-wrap:anywhere}
+.pill{background:var(--us);color:var(--usink);font-weight:700;font-size:13px;padding:6px 14px;border-radius:20px}
+.shh{display:flex;align-items:center;gap:12px;margin-bottom:10px}.sht{font-family:Georgia,serif;font-weight:700;font-size:20px}
+.share{padding:2px}.share .card{padding:10px 12px;margin-bottom:10px}.share .big{padding:8px}.share .big .sc{font-size:46px}.share .log li{padding:5px 0}
 .big{text-align:center;padding:18px 8px}
 .big .sc{font:700 54px/1 Georgia,serif}
 </style></head>
@@ -69,7 +72,7 @@ select{font:inherit;padding:12px;border-radius:12px;border:1px solid var(--line)
 <script>
 const KEY='rugbyScorer.v1';
 const blank=()=>({us:'',them:'',players:[],events:[],redo:[],started:false,finished:false,roster:[],history:[],gid:null,mode:'score',date:null});
-let S=blank(),pick=false,pop=false,screen='home',viewId=null,ed=null,pend=null,hback='';
+let S=blank(),pick=false,pop=false,screen='home',viewId=null,ed=null,pend=null,hback='',shareTmp=null,shareFrom='';
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(blank(),JSON.parse(r))}catch(e){}
 if(!S.roster.length&&S.players.length)S.roster=[...S.players];
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
@@ -168,7 +171,7 @@ function popup(){
   return `<div class="sheet" id="pp" style="align-items:center;padding:14px"><div style="border-radius:18px"><div class="big" style="padding-top:4px"><div style="font-weight:700">${fmt(S.date||today())}</div><div class="empty">Full time · ${res}</div><div class="sc">${a} – ${b}</div><div>${esc(usN())} v ${esc(thN())}</div></div>
   <h3>Scorers</h3><ul class="log">${tally()}</ul>
   <div class="row" style="margin-top:14px"><button id="pc">Keep playing</button><button id="pf" class="primary">Match Summary</button></div></div></div>`}
-function sumHTML(){
+function sumHTML(c){
   const a=score('us'),b=score('them');
   const res=a>b?'Win':a<b?'Defeat':'Draw';
   const tries={};S.events.filter(e=>e.team==='us'&&e.type==='try').forEach(e=>tries[e.player]=(tries[e.player]||0)+1);
@@ -178,14 +181,15 @@ function sumHTML(){
   const sec=n=>{const L=S.events.filter(e=>e.type!=='half'&&e.half===n);
     const f=t=>L.filter(e=>e.team===t).reduce((s,e)=>s+e.pts,0);
     return `<div><div class="strip"><span>${n===1?'First half':'Second half'}</span><span>${f('us')} – ${f('them')}</span></div>${L.length?grp(L).map(evRow).join(''):'<div class="empty" style="padding:6px 0">No scores</div>'}</div>`};
-  return `<div class="card big"><div style="font-weight:700">${fmt(S.date||today())}</div><div class="empty">Full time · ${res}</div><div class="sc">${a} – ${b}</div><div>${esc(usN())} v ${esc(thN())}</div></div>
+  return `<div class="card big">${c?'':`<div style="font-weight:700">${fmt(S.date||today())}</div><div class="empty">Full time · ${res}</div>`}<div class="sc">${a} – ${b}</div><div>${esc(usN())} v ${esc(thN())}</div></div>
   <div class="card"><h3>Scorers</h3><ul class="log">${tally()}</ul></div>
   <div class="card"><h3>Match timeline</h3><div class="tl">${sec(1)}${sec(2)}</div></div>
   `;}
 function summary(){
-  $('#app').innerHTML=sumHTML()+`<div class="row"><button id="bk">Back to match</button><button id="nw" class="primary">New match</button></div><button id="hmx" style="width:100%;margin-top:8px">Home</button>`;
+  $('#app').innerHTML=sumHTML()+`<div class="row"><button id="bk">Back to match</button><button id="nw" class="primary">New match</button></div><button id="shb" style="width:100%;margin-top:8px">Share</button><button id="hmx" style="width:100%;margin-top:8px">Home</button>`;
   $('#bk').onclick=()=>{S.finished=false;save();render()};
   $('#hmx').onclick=()=>{screen='home';render()};
+  $('#shb').onclick=()=>{shareTmp=null;shareFrom='';screen='share';render()};
   $('#nw').onclick=()=>ask('Start a new match? Your squad and past results are kept.','New match',()=>{const k={roster:S.roster,history:S.history,us:S.us,them:S.them,mode:S.mode};S=Object.assign(blank(),k);S.players=[...S.roster];save();render()});
 }
 function ask(msg,ok,fn){const d=document.createElement('div');d.className='sheet';d.style.cssText='align-items:center;padding:14px';
@@ -268,9 +272,10 @@ function hist(){
 function viewG(g){
   const k=S;S=Object.assign({},k,{events:g.events,us:g.us,them:g.them,mode:g.mode||'score',date:g.date});let h;
   try{h=sumHTML()}finally{S=k}
-  $('#app').innerHTML=h+`<div class="row"><button id="hb">Back</button><button id="he">Edit</button><button id="hd">Delete</button></div>`;
+  $('#app').innerHTML=h+`<div class="row"><button id="hb">Back</button><button id="he">Edit</button><button id="hd">Delete</button></div><button id="hsh" style="width:100%;margin-top:8px">Share</button>`;
   $('#hb').onclick=()=>{viewId=null;render()};
   $('#he').onclick=()=>{ed=JSON.parse(JSON.stringify(g));ed.mode=ed.mode||'score';render()};
+  $('#hsh').onclick=()=>{shareTmp=g;shareFrom='hist';screen='share';render()};
   $('#hd').onclick=()=>ask('Delete this result?','Delete',()=>{S.history=S.history.filter(x=>x.id!==g.id);save();viewId=null;render()});
 }
 const LOGO=`<svg viewBox="0 0 100 100" width="120" height="120" role="img" aria-label="Rugby Scorer logo"><rect width="100" height="100" rx="22" fill="var(--us)"/><g transform="rotate(35 50 50)"><ellipse cx="50" cy="50" rx="33" ry="20" fill="#111"/><path d="M24 50H76" stroke="#fff" stroke-width="2.4"/><path d="M36 44V56M43 44V56M50 44V56M57 44V56M64 44V56" stroke="#fff" stroke-width="2"/></g></svg>`;
@@ -298,11 +303,20 @@ function help(){
   <li><b>Opponents score.</b> Tap their Try, Conversion or Penalty. It is added straight away with no name.</li>
   <li><b>Made a mistake?</b> Tap Undo to remove the last action and Redo to put it back. If you start a game by accident, tap Home on the match screen to clear the score and return to the menu.</li>
   <li><b>Half time.</b> Tap Half time when the first half ends. Scores after that count as the second half.</li>
-  <li><b>Full time.</b> Tap Full time for the result and scorers. Tap Match Summary for the detail, or Keep playing if you tapped it too early. The match is saved automatically.</li>
+  <li><b>Full time.</b> Tap Full time for the result and scorers. Tap Match Summary for the detail, or Keep playing if you tapped it too early. The match is saved automatically. On the summary, tap Share for a compact one-screen version to screenshot and send to the team chat.</li>
   <li><b>Past results.</b> On the set-up screen, open Past results to view matches. You can edit scores and scorers, delete a match, or add one you missed.</li>
   <li><b>Settings.</b> From the front page, choose your colours, turn Positions on or off and edit the position list, or back up and restore your squad and results.</li>
   </ol></div><button id="xb" style="width:100%">Back</button>`;
   $('#xb').onclick=()=>{screen='home';render()};
+}
+function share(){
+  const g=shareTmp,k=S;let h='';
+  if(g)S=Object.assign({},k,{events:g.events,us:g.us,them:g.them,mode:g.mode||'score',date:g.date});
+  try{const a=score('us'),b=score('them'),res=a>b?'Win':a<b?'Defeat':'Draw';
+    h=`<div class="share"><div class="shh">${LOGO.replace('width="120" height="120"','width="40" height="40"')}<div style="flex:1"><div class="sht">Full time</div><div class="empty" style="font-size:13px">${fmt(S.date||today())}</div></div><span class="pill">${res.toUpperCase()}</span></div>${sumHTML(true)}<div class="empty" style="text-align:center;font-size:12px">Rugby Scorer</div></div>`}finally{S=k}
+  $('#app').innerHTML=h+`<div class="row" style="margin-top:14px"><button id="sbk">Back</button><button id="shm" class="primary">Home</button></div><p class="empty" style="text-align:center;font-size:13px;margin-top:8px">Take a screenshot of the summary above to share it.</p>`;
+  $('#sbk').onclick=()=>{screen=shareFrom;render()};
+  $('#shm').onclick=()=>{screen='home';render()};
 }
 function editG(){
   const G=ed,T=G.mode==='tries';
@@ -340,7 +354,7 @@ function editG(){
     save();viewId=g.id;ed=null;render()};
 }
 function render(){window.scrollTo(0,0);const g=viewId&&S.history.find(x=>x.id===viewId);
-  if(ed)return editG();if(screen==='home')return home();if(screen==='info')return info();if(screen==='help')return help();if(g)return viewG(g);if(screen==='hist')return hist();if(screen==='backup')return backup();if(screen==='settings')return settings();S.finished?summary():S.started?match():setup()}
+  if(ed)return editG();if(screen==='share')return share();if(screen==='home')return home();if(screen==='info')return info();if(screen==='help')return help();if(g)return viewG(g);if(screen==='hist')return hist();if(screen==='backup')return backup();if(screen==='settings')return settings();S.finished?summary():S.started?match():setup()}
 render();
 if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})});
 </script></body></html>
