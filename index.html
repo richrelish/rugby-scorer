@@ -60,6 +60,8 @@ select{font:inherit;padding:12px;border-radius:12px;border:1px solid var(--line)
 .erow{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--line)}.erow span{flex:1}.erow select{width:auto;max-width:42%;padding:8px}.erow button{padding:6px 12px}
 .home{text-align:center;padding-top:28px}.home h1{font-size:46px;line-height:1.05;margin:16px 0 6px}.home .tag{color:var(--mute);margin:0 0 28px}.home button{width:100%;padding:18px;font-size:19px;margin-bottom:10px}
 .prose p,.prose li{font-size:16px;line-height:1.5;margin:0}.prose ol{padding-left:20px;margin:8px 0 0}.prose li{margin-bottom:9px}
+.tl{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-top:8px}.strip{display:flex;justify-content:space-between;background:var(--ghost);border-radius:8px;padding:5px 9px;font-weight:700;font-size:13px;margin-bottom:2px}
+.trow{display:flex;gap:7px;padding:6px 0;border-top:1px solid var(--line)}.dot{width:9px;height:9px;border-radius:50%;background:var(--us);margin-top:5px;flex:none}.dot.dk{background:var(--them)}.trow>div{flex:1;min-width:0}.tt{display:flex;justify-content:space-between;font-weight:700;font-size:14px}.tw{font-size:11px;color:var(--mute);overflow-wrap:anywhere}
 .big{text-align:center;padding:18px 8px}
 .big .sc{font:700 54px/1 Georgia,serif}
 </style></head>
@@ -135,17 +137,20 @@ function match(){
     ${T?'':`<div class="pair"><button data-a="them:conv">Conversion <small>+2</small></button><button data-a="them:pen">Penalty <small>+3</small></button></div>`}</div>
   <div class="tools"><button id="un" ${S.events.length?'':'disabled'}>Undo</button><button id="re" ${S.redo.length?'':'disabled'}>Redo</button>
     <button id="ht" ${h===1?'':'disabled'}>Half time</button><button id="ft" class="primary">Full time</button></div>
+  <button id="mh" style="width:100%;margin-top:8px">Home</button>
+  <p class="empty" style="margin:6px 4px 0;font-size:13px;text-align:center">Home clears the current score. Use it if a game was started by accident.</p>
   <div class="card" style="margin-top:12px"><h3>Match log</h3><ul class="log">${S.events.length?[...S.events].reverse().map(evLi).join(''):'<li class="empty">Nothing yet</li>'}</ul></div>
   ${pop?popup():''}
   ${pend?posSheet():''}
   ${pick?`<div class="sheet" id="sh"><div><h3>${PL[pick]}</h3><div class="grid">${S.players.map((p,i)=>`<button data-p="${i}">${esc(p)}</button>`).join('')}
   <button data-p="-1" style="background:var(--ghost);color:var(--ink)">Not listed</button></div><button id="cx" style="width:100%">Cancel</button></div></div>`:''}`;
-  $('#utry').onclick=()=>{pick='try';match()};
-  document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const[t,k]=b.dataset.a.split(':');if(t==='us'){pick=k;match()}else add(t,k)});
+  $('#utry').onclick=()=>{if(S.players.length){pick='try';match()}else add('us','try')};
+  document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const[t,k]=b.dataset.a.split(':');if(t==='us'&&S.players.length){pick=k;match()}else add(t,k)});
   document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{const i=+b.dataset.p,k=pick,nm=i<0?'Unknown':S.players[i];pick=false;if(PS.on&&S.mode==='score'&&PS.list.length){pend={type:k,player:nm};match()}else add('us',k,nm)});
   if(pick){$('#cx').onclick=()=>{pick=false;match()};$('#sh').onclick=e=>{if(e.target.id==='sh'){pick=false;match()}}}
   if(pend){document.querySelectorAll('[data-pos]').forEach(b=>b.onclick=()=>{const p=pend,i=+b.dataset.pos;pend=null;add('us',p.type,p.player,i<0?'':PS.list[i])});$('#pcx').onclick=()=>{pend=null;match()};$('#ps').onclick=e=>{if(e.target.id==='ps'){pend=null;match()}}}
   $('#un').onclick=undo;$('#re').onclick=redo;
+  $('#mh').onclick=()=>ask('Clear the current score and return to the main menu?','Clear and go home',()=>{const k={roster:S.roster,history:S.history,players:S.players,us:S.us,them:S.them,mode:S.mode};S=Object.assign(blank(),k);pick=false;pend=null;pop=false;save();screen='home';render()});
   $('#ht').onclick=()=>{S.events.push({team:'',type:'half',pts:0,player:'',half:1});S.redo=[];save();render()};
   $('#ft').onclick=()=>{archive();save();pop=true;match()};
   if(pop){$('#pc').onclick=()=>{pop=false;match()};$('#pf').onclick=()=>{pop=false;S.finished=true;save();render()};$('#pp').onclick=e=>{if(e.target.id==='pp'){pop=false;match()}}}
@@ -161,18 +166,19 @@ function popup(){
   const sc=Object.entries(t).sort((x,y)=>y[1]-x[1]);
   return `<div class="sheet" id="pp" style="align-items:center;padding:14px"><div style="border-radius:18px"><div class="big" style="padding-top:4px"><div style="font-weight:700">${fmt(S.date||today())}</div><div class="empty">Full time · ${res}</div><div class="sc">${a} – ${b}</div><div>${esc(usN())} v ${esc(thN())}</div></div>
   <h3>Scorers</h3><ul class="log">${tally()}</ul>
-  <div class="row" style="margin-top:14px"><button id="pc">Keep playing</button><button id="pf" class="primary">Half-by-half</button></div></div></div>`}
+  <div class="row" style="margin-top:14px"><button id="pc">Keep playing</button><button id="pf" class="primary">Match Summary</button></div></div></div>`}
 function sumHTML(){
   const a=score('us'),b=score('them');
   const res=a>b?'Win':a<b?'Defeat':'Draw';
   const tries={};S.events.filter(e=>e.team==='us'&&e.type==='try').forEach(e=>tries[e.player]=(tries[e.player]||0)+1);
   const sc=Object.entries(tries).sort((x,y)=>y[1]-x[1]);
+  const evRow=e=>{const u=e.team==='us';return `<div class="trow"><span class="dot${u?'':' dk'}"></span><div><div class="tt"><span>${LBL[e.type]}</span><span>+${e.pts}</span></div><div class="tw">${esc(u?(e.player?e.player+(e.pos?' ('+e.pos+')':''):usN()):thN())}</div></div></div>`};
   const sec=n=>{const L=S.events.filter(e=>e.type!=='half'&&e.half===n);
     const f=t=>L.filter(e=>e.team===t).reduce((s,e)=>s+e.pts,0);
-    return `<div class="card"><h3>${n===1?'First half':'Second half'} <span class="pts" style="float:right">${f('us')} – ${f('them')}</span></h3><ul class="log">${L.length?L.map(evLi).join(''):'<li class="empty">No scores</li>'}</ul></div>`};
+    return `<div><div class="strip"><span>${n===1?'First half':'Second half'}</span><span>${f('us')} – ${f('them')}</span></div>${L.length?L.map(evRow).join(''):'<div class="empty" style="padding:6px 0">No scores</div>'}</div>`};
   return `<div class="card big"><div style="font-weight:700">${fmt(S.date||today())}</div><div class="empty">Full time · ${res}</div><div class="sc">${a} – ${b}</div><div>${esc(usN())} v ${esc(thN())}</div></div>
   <div class="card"><h3>Scorers</h3><ul class="log">${tally()}</ul></div>
-  ${sec(1)}${sec(2)}
+  <div class="card"><h3>Match timeline</h3><div class="tl">${sec(1)}${sec(2)}</div></div>
   `;}
 function summary(){
   $('#app').innerHTML=sumHTML()+`<div class="row"><button id="bk">Back to match</button><button id="nw" class="primary">New match</button></div><button id="hmx" style="width:100%;margin-top:8px">Home</button>`;
@@ -288,9 +294,9 @@ function help(){
   <li><b>Your team scores.</b> Tap Try, Conversion or Penalty, then pick the player. Choose Not listed if they are not in the squad.</li>
   <li><b>Positions (optional).</b> In Settings, switch Positions on. In Score mode, after choosing the player you will also pick their position from a list, or tap Skip. Positions show in the match log, the full-time pop-up and the summary. You can rename, remove or add positions in Settings.</li>
   <li><b>Opponents score.</b> Tap their Try, Conversion or Penalty. It is added straight away with no name.</li>
-  <li><b>Made a mistake?</b> Tap Undo to remove the last action and Redo to put it back.</li>
+  <li><b>Made a mistake?</b> Tap Undo to remove the last action and Redo to put it back. If you start a game by accident, tap Home on the match screen to clear the score and return to the menu.</li>
   <li><b>Half time.</b> Tap Half time when the first half ends. Scores after that count as the second half.</li>
-  <li><b>Full time.</b> Tap Full time for the result and scorers. Tap Half-by-half for the detail, or Keep playing if you tapped it too early. The match is saved automatically.</li>
+  <li><b>Full time.</b> Tap Full time for the result and scorers. Tap Match Summary for the detail, or Keep playing if you tapped it too early. The match is saved automatically.</li>
   <li><b>Past results.</b> On the set-up screen, open Past results to view matches. You can edit scores and scorers, delete a match, or add one you missed.</li>
   <li><b>Settings.</b> From the front page, choose your colours, turn Positions on or off and edit the position list, or back up and restore your squad and results.</li>
   </ol></div><button id="xb" style="width:100%">Back</button>`;
