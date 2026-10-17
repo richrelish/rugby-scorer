@@ -67,7 +67,7 @@ select{font:inherit;padding:12px;border-radius:12px;border:1px solid var(--line)
 <script>
 const KEY='rugbyScorer.v1';
 const blank=()=>({us:'',them:'',players:[],events:[],redo:[],started:false,finished:false,roster:[],history:[],gid:null,mode:'score',date:null});
-let S=blank(),pick=false,pop=false,screen='home',viewId=null,ed=null,pend=null;
+let S=blank(),pick=false,pop=false,screen='home',viewId=null,ed=null,pend=null,hback='';
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(blank(),JSON.parse(r))}catch(e){}
 if(!S.roster.length&&S.players.length)S.roster=[...S.players];
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
@@ -118,7 +118,7 @@ function setup(){
   $('#addp').onclick=addP;$('#pn').onkeydown=e=>{if(e.key==='Enter')addP()};
   document.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{names();const n=S.roster[+b.dataset.rm];S.roster=S.roster.filter(x=>x!==n);S.players=S.players.filter(x=>x!==n);save();setup()});
   document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{names();const n=S.roster[+b.dataset.t];S.players=S.players.includes(n)?S.players.filter(x=>x!==n):[...S.players,n];save();setup()});
-  $('#hs').onclick=()=>{names();screen='hist';render()};
+  $('#hs').onclick=()=>{names();hback='';screen='hist';render()};
   document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{names();S.mode=b.dataset.m;save();setup()});
   $('#go').onclick=()=>{names();S.started=true;save();render()};
 }
@@ -175,8 +175,9 @@ function sumHTML(){
   ${sec(1)}${sec(2)}
   `;}
 function summary(){
-  $('#app').innerHTML=sumHTML()+`<div class="row"><button id="bk">Back to match</button><button id="nw" class="primary">New match</button></div>`;
+  $('#app').innerHTML=sumHTML()+`<div class="row"><button id="bk">Back to match</button><button id="nw" class="primary">New match</button></div><button id="hmx" style="width:100%;margin-top:8px">Home</button>`;
   $('#bk').onclick=()=>{S.finished=false;save();render()};
+  $('#hmx').onclick=()=>{screen='home';render()};
   $('#nw').onclick=()=>ask('Start a new match? Your squad and past results are kept.','New match',()=>{const k={roster:S.roster,history:S.history,us:S.us,them:S.them,mode:S.mode};S=Object.assign(blank(),k);S.players=[...S.roster];save();render()});
 }
 function ask(msg,ok,fn){const d=document.createElement('div');d.className='sheet';d.style.cssText='align-items:center;padding:14px';
@@ -252,7 +253,7 @@ function hist(){
   ${H.map(g=>`<button class="card hrow" data-h="${g.id}"><span><b>${esc(g.us)}</b> v ${esc(g.them)}<br><small class="empty">${fmt(g.date)}${g.mode==='tries'?' · try count':''}</small></span><span class="pts" style="font-size:20px">${g.a} – ${g.b}</span></button>`).join('')}
   <button id="hn" style="width:100%;margin-bottom:8px">Add a past match</button>
   <button id="hb" style="width:100%">Back</button>`;
-  $('#hb').onclick=()=>{screen='';render()};
+  $('#hb').onclick=()=>{screen=hback;render()};
   $('#hn').onclick=()=>{ed={id:Date.now(),date:today(),us:S.us.trim()||'Us',them:'',mode:S.mode,events:[],isNew:true};render()};
   document.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{viewId=+b.dataset.h;render()});
 }
@@ -267,8 +268,9 @@ function viewG(g){
 const LOGO=`<svg viewBox="0 0 100 100" width="120" height="120" role="img" aria-label="Rugby Scorer logo"><rect width="100" height="100" rx="22" fill="var(--us)"/><g transform="rotate(35 50 50)"><ellipse cx="50" cy="50" rx="33" ry="20" fill="#111"/><path d="M24 50H76" stroke="#fff" stroke-width="2.4"/><path d="M36 44V56M43 44V56M50 44V56M57 44V56M64 44V56" stroke="#fff" stroke-width="2"/></g></svg>`;
 function home(){
   $('#app').innerHTML=`<div class="home">${LOGO}<h1>Rugby Scorer</h1><p class="tag">Live scores and scorers for match day</p>
-  <button class="primary" id="h1b">Start</button><button id="h2b">Info</button><button id="h3b">Instructions</button><button id="h4b">Settings</button></div>`;
+  <button class="primary" id="h1b">Start</button><button id="h5b">Past results</button><button id="h2b">Info</button><button id="h3b">Instructions</button><button id="h4b">Settings</button></div>`;
   $('#h1b').onclick=()=>{screen='';render()};
+  $('#h5b').onclick=()=>{hback='home';screen='hist';render()};
   $('#h2b').onclick=()=>{screen='info';render()};
   $('#h3b').onclick=()=>{screen='help';render()};
   $('#h4b').onclick=()=>{screen='settings';render()};
