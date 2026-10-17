@@ -67,7 +67,7 @@ select{font:inherit;padding:12px;border-radius:12px;border:1px solid var(--line)
 <script>
 const KEY='rugbyScorer.v1';
 const blank=()=>({us:'',them:'',players:[],events:[],redo:[],started:false,finished:false,roster:[],history:[],gid:null,mode:'score',date:null});
-let S=blank(),pick=false,pop=false,screen='home',viewId=null,ed=null;
+let S=blank(),pick=false,pop=false,screen='home',viewId=null,ed=null,pend=null;
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(blank(),JSON.parse(r))}catch(e){}
 if(!S.roster.length&&S.players.length)S.roster=[...S.players];
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
@@ -83,16 +83,20 @@ function applyTheme(){const r=document.documentElement,st=r.style;
   if(TH.mode==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',TH.mode);
   try{localStorage.setItem(TK,JSON.stringify(TH))}catch(e){}}
 applyTheme();
+const PK='rugbyScorer.pos',DEF=['Loose head prop','Right head prop','Hooker','Second row','Blind side flanker','Open side flanker','Number 8','Scrum half','Outside half','Inside centre','Outside centre','Left wing','Right wing','Full back'];
+let PS={on:false,list:[...DEF]};
+try{const r=localStorage.getItem(PK);if(r){const o=JSON.parse(r);PS={on:!!o.on,list:Array.isArray(o.list)?o.list:[...DEF]}}}catch(e){}
+const savePS=()=>{try{localStorage.setItem(PK,JSON.stringify(PS))}catch(e){}};
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const usN=()=>S.us.trim()||'Us',thN=()=>S.them.trim()||'Them';
 const half=()=>S.events.some(e=>e.type==='half')?2:1;
 const score=t=>S.events.filter(e=>e.team===t).reduce((a,e)=>a+e.pts,0);
 const PL={try:'Who scored the try?',conv:'Who kicked the conversion?',pen:'Who kicked the penalty?'};
 const LBL={try:'Try',conv:'Conversion',pen:'Penalty'},PTS={try:5,conv:2,pen:3};
-const add=(team,type,player)=>{S.events.push({team,type,pts:S.mode==='tries'&&type==='try'?1:PTS[type]||0,player:player||'',half:half()});S.redo=[];save();render()};
+const add=(team,type,player,pos)=>{S.events.push({team,type,pts:S.mode==='tries'&&type==='try'?1:PTS[type]||0,player:player||'',pos:pos||'',half:half()});S.redo=[];save();render()};
 const undo=()=>{if(S.events.length){S.redo.push(S.events.pop());S.finished=false;save();render()}};
 const redo=()=>{if(S.redo.length){S.events.push(S.redo.pop());save();render()}};
-const evText=e=>e.type==='half'?'Half time':(e.team==='us'?usN():thN())+' '+LBL[e.type].toLowerCase()+(e.player?' – '+e.player:'');
+const evText=e=>e.type==='half'?'Half time':(e.team==='us'?usN():thN())+' '+LBL[e.type].toLowerCase()+(e.player?' – '+e.player+(e.pos?' ('+e.pos+')':''):'');
 const evLi=e=>`<li><span>${esc(evText(e))}</span><span class="pts">${e.type==='half'?'':'+'+e.pts}</span></li>`;
 
 function setup(){
@@ -133,21 +137,24 @@ function match(){
     <button id="ht" ${h===1?'':'disabled'}>Half time</button><button id="ft" class="primary">Full time</button></div>
   <div class="card" style="margin-top:12px"><h3>Match log</h3><ul class="log">${S.events.length?[...S.events].reverse().map(evLi).join(''):'<li class="empty">Nothing yet</li>'}</ul></div>
   ${pop?popup():''}
+  ${pend?posSheet():''}
   ${pick?`<div class="sheet" id="sh"><div><h3>${PL[pick]}</h3><div class="grid">${S.players.map((p,i)=>`<button data-p="${i}">${esc(p)}</button>`).join('')}
   <button data-p="-1" style="background:var(--ghost);color:var(--ink)">Not listed</button></div><button id="cx" style="width:100%">Cancel</button></div></div>`:''}`;
   $('#utry').onclick=()=>{pick='try';match()};
   document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const[t,k]=b.dataset.a.split(':');if(t==='us'){pick=k;match()}else add(t,k)});
-  document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{const i=+b.dataset.p,k=pick;pick=false;add('us',k,i<0?'Unknown':S.players[i])});
+  document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{const i=+b.dataset.p,k=pick,nm=i<0?'Unknown':S.players[i];pick=false;if(PS.on&&S.mode==='score'&&PS.list.length){pend={type:k,player:nm};match()}else add('us',k,nm)});
   if(pick){$('#cx').onclick=()=>{pick=false;match()};$('#sh').onclick=e=>{if(e.target.id==='sh'){pick=false;match()}}}
+  if(pend){document.querySelectorAll('[data-pos]').forEach(b=>b.onclick=()=>{const p=pend,i=+b.dataset.pos;pend=null;add('us',p.type,p.player,i<0?'':PS.list[i])});$('#pcx').onclick=()=>{pend=null;match()};$('#ps').onclick=e=>{if(e.target.id==='ps'){pend=null;match()}}}
   $('#un').onclick=undo;$('#re').onclick=redo;
   $('#ht').onclick=()=>{S.events.push({team:'',type:'half',pts:0,player:'',half:1});S.redo=[];save();render()};
   $('#ft').onclick=()=>{archive();save();pop=true;match()};
   if(pop){$('#pc').onclick=()=>{pop=false;match()};$('#pf').onclick=()=>{pop=false;S.finished=true;save();render()};$('#pp').onclick=e=>{if(e.target.id==='pp'){pop=false;match()}}}
 }
 
-function tally(){const t={};S.events.filter(e=>e.team==='us'&&e.player).forEach(e=>{const o=t[e.player]||(t[e.player]={try:0,conv:0,pen:0,pts:0});o[e.type]++;o.pts+=e.pts});
+function posSheet(){return `<div class="sheet" id="ps"><div><h3>Position for ${esc(pend.player)}</h3><div class="grid">${PS.list.map((p,i)=>`<button data-pos="${i}">${esc(p)}</button>`).join('')}<button data-pos="-1" style="background:var(--ghost);color:var(--ink)">Skip</button></div><button id="pcx" style="width:100%">Cancel</button></div></div>`}
+function tally(){const t={};S.events.filter(e=>e.team==='us'&&e.player).forEach(e=>{const o=t[e.player]||(t[e.player]={try:0,conv:0,pen:0,pts:0,pos:new Set()});o[e.type]++;o.pts+=e.pts;if(e.pos)o.pos.add(e.pos)});
   const w=(n,a,b)=>n?n+' '+(n>1?b:a):'';
-  return Object.entries(t).sort((x,y)=>y[1].pts-x[1].pts).map(([p,o])=>`<li><span>${esc(p)}${S.mode==='tries'?'':'<br>'}<small class="empty"${S.mode==='tries'?' hidden':''}>${[w(o.try,'try','tries'),w(o.conv,'conversion','conversions'),w(o.pen,'penalty','penalties')].filter(Boolean).join(', ')}</small></span><span class="pts">${S.mode==='tries'?w(o.try,'try','tries'):o.pts+' pts'}</span></li>`).join('')||'<li class="empty">No scorers yet</li>'}
+  return Object.entries(t).sort((x,y)=>y[1].pts-x[1].pts).map(([p,o])=>`<li><span>${esc(p)}${S.mode==='tries'?'':'<br>'}<small class="empty"${S.mode==='tries'?' hidden':''}>${[w(o.try,'try','tries'),w(o.conv,'conversion','conversions'),w(o.pen,'penalty','penalties')].filter(Boolean).join(', ')}${o.pos.size?' · '+[...o.pos].join(', '):''}</small></span><span class="pts">${S.mode==='tries'?w(o.try,'try','tries'):o.pts+' pts'}</span></li>`).join('')||'<li class="empty">No scorers yet</li>'}
 function popup(){
   const a=score('us'),b=score('them'),res=a>b?'Win':a<b?'Defeat':'Draw',t={};
   S.events.filter(e=>e.team==='us'&&e.type==='try').forEach(e=>t[e.player]=(t[e.player]||0)+1);
@@ -187,12 +194,24 @@ function settings(){
   <label style="margin-top:12px">Appearance</label>
   <div class="row seg">${[['auto','Auto'],['light','Light'],['dark','Dark']].map(([m,n])=>`<button data-md="${m}" class="${TH.mode===m?'sel':''}" aria-pressed="${TH.mode===m}">${n}</button>`).join('')}</div>
   <button id="rs" style="width:100%;margin-top:12px">Reset colours</button></div>
+  <div class="card"><h3>Positions</h3><p class="empty">When on, you also choose a position each time your team scores. Score mode only.</p>
+  <div class="row seg" style="margin-top:8px"><button data-ps="1" class="${PS.on?'sel':''}" aria-pressed="${PS.on}">On</button><button data-ps="0" class="${PS.on?'':'sel'}" aria-pressed="${!PS.on}">Off</button></div>
+  <label style="margin-top:12px">Position list</label>
+  ${PS.list.map((p,i)=>`<div class="erow"><input style="flex:1" data-pl="${i}" value="${esc(p)}" aria-label="Position ${i+1}"><button data-pd="${i}" aria-label="Remove ${esc(p)}">×</button></div>`).join('')}
+  <div class="row" style="margin-top:8px"><input id="np" placeholder="New position"><button id="npa" style="flex:0 0 80px">Add</button></div>
+  <button id="pr" style="width:100%;margin-top:12px">Reset list</button></div>
   <div class="card"><h3>Your data</h3><p class="empty">Back up your squad and results, or restore them on another phone.</p><button id="bu" style="width:100%">Backup & restore</button></div>
   <button id="sb" style="width:100%">Back</button>`;
   document.querySelectorAll('.swb').forEach(b=>b.onclick=()=>{TH[b.dataset.k]=b.dataset.c;applyTheme();settings()});
   document.querySelectorAll('input[type=color]').forEach(i=>i.onchange=()=>{TH[i.dataset.k]=i.value;applyTheme();settings()});
   document.querySelectorAll('[data-md]').forEach(b=>b.onclick=()=>{TH.mode=b.dataset.md;applyTheme();settings()});
   $('#rs').onclick=()=>{TH={...DT};applyTheme();settings()};
+  document.querySelectorAll('[data-ps]').forEach(b=>b.onclick=()=>{PS.on=b.dataset.ps==='1';savePS();settings()});
+  document.querySelectorAll('[data-pl]').forEach(i=>i.onchange=()=>{const v=i.value.trim();if(v){PS.list[+i.dataset.pl]=v;savePS()}else i.value=PS.list[+i.dataset.pl]});
+  document.querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>{PS.list.splice(+b.dataset.pd,1);savePS();settings()});
+  const addPos=()=>{const v=$('#np').value.trim();if(v){PS.list.push(v);savePS()}settings()};
+  $('#npa').onclick=addPos;$('#np').onkeydown=e=>{if(e.key==='Enter')addPos()};
+  $('#pr').onclick=()=>{PS.list=[...DEF];savePS();settings()};
   $('#bu').onclick=()=>{screen='backup';render()};
   $('#sb').onclick=()=>{screen='home';render()};
 }
@@ -255,7 +274,7 @@ function home(){
   $('#h4b').onclick=()=>{screen='settings';render()};
 }
 function info(){
-  $('#app').innerHTML=`<h1>Info</h1><div class="card prose" style="margin-top:12px"><p>Rugby Scorer is a simple match-day tracker for your team. It keeps a running score for both sides, records who scored each try, conversion or penalty, and marks half time. At full time it gives you a summary with the final score, the scorers and what happened in each half. You can play with full scoring or just count tries, and every match is saved on your phone so you can look back, edit results and back them up. Once the app is open it keeps working without a signal, and you can change its colours in Settings.</p></div>
+  $('#app').innerHTML=`<h1>Info</h1><div class="card prose" style="margin-top:12px"><p>Rugby Scorer is a simple match-day tracker for your team. It keeps a running score for both sides, records who scored each try, conversion or penalty (and their position, if you switch that on), and marks half time. At full time it gives you a summary with the final score, the scorers and what happened in each half. You can play with full scoring or just count tries, and every match is saved on your phone so you can look back, edit results and back them up. Once the app is open it keeps working without a signal, and you can change its colours in Settings.</p></div>
   <button id="ib" style="width:100%">Back</button>`;
   $('#ib').onclick=()=>{screen='home';render()};
 }
@@ -265,12 +284,13 @@ function help(){
   <li><b>Add your squad.</b> Type each player's name and tap Add. Tap names to choose who is playing today. The squad is remembered for next time.</li>
   <li><b>Kick off.</b> Tap Kick off to open the match screen. The running score for each team is at the top.</li>
   <li><b>Your team scores.</b> Tap Try, Conversion or Penalty, then pick the player. Choose Not listed if they are not in the squad.</li>
+  <li><b>Positions (optional).</b> In Settings, switch Positions on. In Score mode, after choosing the player you will also pick their position from a list, or tap Skip. Positions show in the match log, the full-time pop-up and the summary. You can rename, remove or add positions in Settings.</li>
   <li><b>Opponents score.</b> Tap their Try, Conversion or Penalty. It is added straight away with no name.</li>
   <li><b>Made a mistake?</b> Tap Undo to remove the last action and Redo to put it back.</li>
   <li><b>Half time.</b> Tap Half time when the first half ends. Scores after that count as the second half.</li>
   <li><b>Full time.</b> Tap Full time for the result and scorers. Tap Half-by-half for the detail, or Keep playing if you tapped it too early. The match is saved automatically.</li>
   <li><b>Past results.</b> On the set-up screen, open Past results to view matches. You can edit scores and scorers, delete a match, or add one you missed.</li>
-  <li><b>Settings.</b> Choose your colours, or back up and restore your squad and results.</li>
+  <li><b>Settings.</b> From the front page, choose your colours, turn Positions on or off and edit the position list, or back up and restore your squad and results.</li>
   </ol></div><button id="xb" style="width:100%">Back</button>`;
   $('#xb').onclick=()=>{screen='home';render()};
 }
@@ -279,7 +299,7 @@ function editG(){
   const pl=[...new Set([...S.roster,...G.events.filter(e=>e.player&&e.player!=='Unknown').map(e=>e.player)])];
   const opts=sel=>['Unknown',...pl].map(p=>`<option${p===sel?' selected':''}>${esc(p)}</option>`).join('');
   const tot=t=>G.events.filter(e=>e.team===t).reduce((a,e)=>a+e.pts,0);
-  const rows=n=>{const r=G.events.map((e,i)=>({e,i})).filter(x=>x.e.type!=='half'&&x.e.half===n).map(({e,i})=>`<div class="erow"><span>${esc(e.team==='us'?G.us:G.them||'Them')} ${LBL[e.type].toLowerCase()} <b>+${e.pts}</b></span>${e.team==='us'?`<select data-es="${i}" aria-label="Scorer">${opts(e.player||'Unknown')}</select>`:''}<button data-ed="${i}" aria-label="Delete score">×</button></div>`).join('');return r||'<div class="empty">No scores</div>'};
+  const rows=n=>{const r=G.events.map((e,i)=>({e,i})).filter(x=>x.e.type!=='half'&&x.e.half===n).map(({e,i})=>`<div class="erow"><span>${esc(e.team==='us'?G.us:G.them||'Them')} ${LBL[e.type].toLowerCase()} <b>+${e.pts}</b>${e.pos?' ('+esc(e.pos)+')':''}</span>${e.team==='us'?`<select data-es="${i}" aria-label="Scorer">${opts(e.player||'Unknown')}</select>`:''}<button data-ed="${i}" aria-label="Delete score">×</button></div>`).join('');return r||'<div class="empty">No scores</div>'};
   $('#app').innerHTML=`<h1>${G.isNew?'Add a past match':'Edit result'}</h1>
   <div class="card"><div class="row"><div><label for="eu">Your team</label><input id="eu" value="${esc(G.us)}"></div><div><label for="et">Opponents</label><input id="et" value="${esc(G.them)}"></div></div>
   <label for="edt" style="margin-top:10px">Date</label><input type="date" id="edt" value="${esc(String(G.date).slice(0,10))}"></div>
@@ -290,13 +310,14 @@ function editG(){
   <select id="ak" aria-label="Type">${T?'<option value="try">Try</option>':'<option value="try">Try</option><option value="conv">Conversion</option><option value="pen">Penalty</option>'}</select>
   <select id="ah" aria-label="Half"><option value="1">1st half</option><option value="2">2nd half</option></select></div>
   <label for="ap" style="margin-top:8px">Scorer (your team)</label><select id="ap">${opts('Unknown')}</select>
+  ${T?'':`<label for="apo" style="margin-top:8px">Position (optional)</label><select id="apo"><option value="">None</option>${PS.list.map(p=>`<option>${esc(p)}</option>`).join('')}</select>`}
   <button id="aa" class="primary" style="width:100%;margin-top:8px">Add</button></div>
   <div class="row"><button id="ec">Cancel</button><button id="es" class="primary">Save</button></div>`;
   const sync=()=>{G.us=$('#eu').value;G.them=$('#et').value;G.date=$('#edt').value||G.date};
   document.querySelectorAll('[data-es]').forEach(x=>x.onchange=()=>{G.events[+x.dataset.es].player=x.value});
   document.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>{sync();G.events.splice(+b.dataset.ed,1);editG()});
   $('#aa').onclick=()=>{sync();const team=$('#at').value,type=$('#ak').value,h=+$('#ah').value;
-    const ev={team,type,pts:T&&type==='try'?1:PTS[type],player:team==='us'?$('#ap').value:'',half:h};
+    const ev={team,type,pts:T&&type==='try'?1:PTS[type],player:team==='us'?$('#ap').value:'',pos:team==='us'?(($('#apo')||{}).value||''):'',half:h};
     const m=G.events.findIndex(e=>e.type==='half');
     if(h===1&&m>=0)G.events.splice(m,0,ev);else G.events.push(ev);
     editG()};
