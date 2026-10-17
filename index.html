@@ -105,8 +105,7 @@ function setup(){
   <div class="empty" style="margin-top:10px">Tap names to choose who's playing today (${S.players.length} of ${S.roster.length})</div>
   <div class="chips">${S.roster.map((p,i)=>`<span class="chip ${S.players.includes(p)?'on':''}"><button class="nm" data-t="${i}" aria-pressed="${S.players.includes(p)}">${esc(p)}</button><button data-rm="${i}" aria-label="Remove ${esc(p)}">×</button></span>`).join('')||'<span class="empty">No players yet</span>'}</div></div>
   <button class="primary" id="go" style="width:100%;padding:16px;font-size:18px">Kick off</button>
-  <button id="hs" style="width:100%;margin-top:10px">Past results (${S.history.length})</button>
-  <button id="bk2" style="width:100%;margin-top:10px">Settings</button>`;
+  <button id="hs" style="width:100%;margin-top:10px">Past results (${S.history.length})</button>`;
   const names=()=>{S.us=$('#us').value;S.them=$('#th').value;save()};
   $('#us').oninput=names;$('#th').oninput=names;
   $('#md').onchange=()=>{S.date=$('#md').value||null;save()};
@@ -116,7 +115,6 @@ function setup(){
   document.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{names();const n=S.roster[+b.dataset.rm];S.roster=S.roster.filter(x=>x!==n);S.players=S.players.filter(x=>x!==n);save();setup()});
   document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{names();const n=S.roster[+b.dataset.t];S.players=S.players.includes(n)?S.players.filter(x=>x!==n):[...S.players,n];save();setup()});
   $('#hs').onclick=()=>{names();screen='hist';render()};
-  $('#bk2').onclick=()=>{names();screen='settings';render()};
   document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{names();S.mode=b.dataset.m;save();setup()});
   $('#go').onclick=()=>{names();S.started=true;save();render()};
 }
@@ -196,7 +194,7 @@ function settings(){
   document.querySelectorAll('[data-md]').forEach(b=>b.onclick=()=>{TH.mode=b.dataset.md;applyTheme();settings()});
   $('#rs').onclick=()=>{TH={...DT};applyTheme();settings()};
   $('#bu').onclick=()=>{screen='backup';render()};
-  $('#sb').onclick=()=>{screen='';render()};
+  $('#sb').onclick=()=>{screen='home';render()};
 }
 function backup(){
   const data=JSON.stringify({v:1,roster:S.roster,history:S.history});
@@ -250,10 +248,11 @@ function viewG(g){
 const LOGO=`<svg viewBox="0 0 100 100" width="120" height="120" role="img" aria-label="Rugby Scorer logo"><rect width="100" height="100" rx="22" fill="var(--us)"/><g transform="rotate(35 50 50)"><ellipse cx="50" cy="50" rx="33" ry="20" fill="#111"/><path d="M24 50H76" stroke="#fff" stroke-width="2.4"/><path d="M36 44V56M43 44V56M50 44V56M57 44V56M64 44V56" stroke="#fff" stroke-width="2"/></g></svg>`;
 function home(){
   $('#app').innerHTML=`<div class="home">${LOGO}<h1>Rugby Scorer</h1><p class="tag">Live scores and scorers for match day</p>
-  <button class="primary" id="h1b">Start</button><button id="h2b">Info</button><button id="h3b">Instructions</button></div>`;
+  <button class="primary" id="h1b">Start</button><button id="h2b">Info</button><button id="h3b">Instructions</button><button id="h4b">Settings</button></div>`;
   $('#h1b').onclick=()=>{screen='';render()};
   $('#h2b').onclick=()=>{screen='info';render()};
   $('#h3b').onclick=()=>{screen='help';render()};
+  $('#h4b').onclick=()=>{screen='settings';render()};
 }
 function info(){
   $('#app').innerHTML=`<h1>Info</h1><div class="card prose" style="margin-top:12px"><p>Rugby Scorer is a simple match-day tracker for your team. It keeps a running score for both sides, records who scored each try, conversion or penalty, and marks half time. At full time it gives you a summary with the final score, the scorers and what happened in each half. You can play with full scoring or just count tries, and every match is saved on your phone so you can look back, edit results and back them up. Once the app is open it keeps working without a signal, and you can change its colours in Settings.</p></div>
